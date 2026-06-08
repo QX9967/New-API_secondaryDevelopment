@@ -1,6 +1,7 @@
 package channel
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -310,7 +311,29 @@ func DoApiRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBody
 		return nil, fmt.Errorf("get request url failed: %w", err)
 	}
 	logger.LogDebug(c, "fullRequestURL: %s", fullRequestURL)
-	req, err := http.NewRequest(c.Request.Method, fullRequestURL, requestBody)
+
+	// 检查是否启用加密
+	var encryptedRequestBody io.Reader
+	if info.ChannelSetting.EncryptionEnabled && info.ChannelSetting.EncryptionKey != "" {
+		// 读取请求体
+		bodyBytes, err := io.ReadAll(requestBody)
+		if err != nil {
+			return nil, fmt.Errorf("read request body failed: %w", err)
+		}
+
+		// 加密请求体
+		encryptedBody, err := EncryptRequestBody(info.ChannelSetting.EncryptionKey, bodyBytes)
+		if err != nil {
+			return nil, fmt.Errorf("encrypt request body failed: %w", err)
+		}
+
+		encryptedRequestBody = bytes.NewReader(encryptedBody)
+		logger.LogDebug(c, "request body encrypted")
+	} else {
+		encryptedRequestBody = requestBody
+	}
+
+	req, err := http.NewRequest(c.Request.Method, fullRequestURL, encryptedRequestBody)
 	if err != nil {
 		return nil, fmt.Errorf("new request failed: %w", err)
 	}
@@ -327,6 +350,12 @@ func DoApiRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBody
 		return nil, err
 	}
 	applyHeaderOverrideToRequest(req, headerOverride)
+
+	// 如果启用加密，添加加密标记头
+	if info.ChannelSetting.EncryptionEnabled {
+		req.Header.Set("X-Encryption-Enabled", "true")
+	}
+
 	resp, err := doRequest(c, req, info)
 	if err != nil {
 		return nil, fmt.Errorf("do request failed: %w", err)
