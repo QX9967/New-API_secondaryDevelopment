@@ -666,6 +666,20 @@ export function DetailsDialog(props: DetailsDialogProps) {
                 variant='danger'
               >
                 <p className='text-xs break-words'>{other.reject_reason}</p>
+                {other.client_ip && (
+                  <DetailRow
+                    label={t('Client IP')}
+                    value={other.client_ip}
+                    mono
+                  />
+                )}
+                {other.allow_ips && Array.isArray(other.allow_ips) && other.allow_ips.length > 0 && (
+                  <DetailRow
+                    label={t('Allow IPs')}
+                    value={other.allow_ips.join(', ')}
+                    mono
+                  />
+                )}
               </DetailSection>
             )}
 

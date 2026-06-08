@@ -176,6 +176,9 @@ export interface LogOtherData {
   fee_quota?: number
   // Reject / intercept reason (admin)
   reject_reason?: string
+  // IP restriction fields
+  client_ip?: string
+  allow_ips?: string[]
   // Task-related fields (for refund logs, type=6)
   is_task?: boolean
   task_id?: string
