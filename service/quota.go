@@ -252,6 +252,8 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 		IsStream:         relayInfo.IsStream,
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
+		RequestBody:      common.GetContextKeyString(ctx, constant.ContextKeyLogRequestBody),
+		ResponseBody:     common.GetContextKeyString(ctx, constant.ContextKeyLogResponseBody),
 	})
 }
 
@@ -373,6 +375,8 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 		IsStream:         relayInfo.IsStream,
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
+		RequestBody:      common.GetContextKeyString(ctx, constant.ContextKeyLogRequestBody),
+		ResponseBody:     common.GetContextKeyString(ctx, constant.ContextKeyLogResponseBody),
 	})
 	gopool.Go(func() {
 		perfmetrics.RecordRelaySample(relayInfo, true, int64(usage.CompletionTokens))

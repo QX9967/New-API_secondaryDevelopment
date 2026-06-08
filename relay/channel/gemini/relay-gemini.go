@@ -1394,6 +1394,11 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 		}
 	}
 
+	// Capture response text for detailed logging
+	if common.LogDetailEnabled {
+		c.Set(string(constant.ContextKeyLogResponseBody), common.TruncateString(responseText.String(), common.LogDetailMaxSize))
+	}
+
 	return usage, nil
 }
 
@@ -1569,6 +1574,22 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 		responseBody = claudeRespStr
 	case types.RelayFormatGemini:
 		break
+	}
+
+	// Capture response text for detailed logging
+	if common.LogDetailEnabled {
+		var respTextBuilder strings.Builder
+		for _, choice := range fullTextResponse.Choices {
+			if choice.Message.StringContent() != "" {
+				if respTextBuilder.Len() > 0 {
+					respTextBuilder.WriteString("\n")
+				}
+				respTextBuilder.WriteString(choice.Message.StringContent())
+			}
+		}
+		if respTextBuilder.Len() > 0 {
+			c.Set(string(constant.ContextKeyLogResponseBody), common.TruncateString(respTextBuilder.String(), common.LogDetailMaxSize))
+		}
 	}
 
 	service.IOCopyBytesGracefully(c, resp, responseBody)

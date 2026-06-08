@@ -186,6 +186,11 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 
 	HandleFinalResponse(c, info, lastStreamData, responseId, createAt, model, systemFingerprint, usage, containStreamUsage)
 
+	// Capture response text for detailed logging
+	if common.LogDetailEnabled {
+		c.Set(string(constant.ContextKeyLogResponseBody), common.TruncateString(responseTextBuilder.String(), common.LogDetailMaxSize))
+	}
+
 	return usage, nil
 }
 
@@ -287,6 +292,22 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
 		responseBody = geminiRespStr
+	}
+
+	// Capture response text for detailed logging
+	if common.LogDetailEnabled {
+		var respTextBuilder strings.Builder
+		for _, choice := range simpleResponse.Choices {
+			if choice.Message.StringContent() != "" {
+				if respTextBuilder.Len() > 0 {
+					respTextBuilder.WriteString("\n")
+				}
+				respTextBuilder.WriteString(choice.Message.StringContent())
+			}
+		}
+		if respTextBuilder.Len() > 0 {
+			c.Set(string(constant.ContextKeyLogResponseBody), common.TruncateString(respTextBuilder.String(), common.LogDetailMaxSize))
+		}
 	}
 
 	service.IOCopyBytesGracefully(c, resp, responseBody)

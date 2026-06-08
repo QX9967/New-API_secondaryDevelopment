@@ -66,4 +66,9 @@ const (
 	// ContextKeyLanguage stores the user's language preference for i18n
 	ContextKeyLanguage ContextKey = "language"
 	ContextKeyIsStream ContextKey = "is_stream"
+
+	// ContextKeyLogRequestBody stores the original request body for detailed logging
+	ContextKeyLogRequestBody ContextKey = "log_request_body"
+	// ContextKeyLogResponseBody stores the accumulated response text for detailed logging
+	ContextKeyLogResponseBody ContextKey = "log_response_body"
 )

@@ -123,6 +123,21 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		return
 	}
 
+	// Capture request body for detailed logging if enabled
+	if common.LogDetailEnabled {
+		if storage, err := common.GetBodyStorage(c); err == nil {
+			if bodyBytes, err := storage.Bytes(); err == nil {
+				captured := common.TruncateString(string(bodyBytes), common.LogDetailMaxSize)
+				c.Set(string(constant.ContextKeyLogRequestBody), captured)
+				logger.LogInfo(c, fmt.Sprintf("log detail: captured request body (%d bytes)", len(captured)))
+			} else {
+				logger.LogError(c, "log detail: failed to read body storage bytes: "+err.Error())
+			}
+		} else {
+			logger.LogError(c, "log detail: failed to get body storage: "+err.Error())
+		}
+	}
+
 	needSensitiveCheck := setting.ShouldCheckPromptSensitive()
 	needCountToken := constant.CountToken
 	// Avoid building huge CombineText (strings.Join) when token counting and sensitive check are both disabled.
@@ -395,7 +410,7 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 			startTime = time.Now()
 		}
 		useTimeSeconds := int(time.Since(startTime).Seconds())
-		model.RecordErrorLog(c, userId, channelId, modelName, tokenName, err.MaskSensitiveErrorWithStatusCode(), tokenId, useTimeSeconds, common.GetContextKeyBool(c, constant.ContextKeyIsStream), userGroup, other)
+		model.RecordErrorLog(c, userId, channelId, modelName, tokenName, err.MaskSensitiveErrorWithStatusCode(), tokenId, useTimeSeconds, common.GetContextKeyBool(c, constant.ContextKeyIsStream), userGroup, other, common.GetContextKeyString(c, constant.ContextKeyLogRequestBody), common.GetContextKeyString(c, constant.ContextKeyLogResponseBody))
 	}
 
 }

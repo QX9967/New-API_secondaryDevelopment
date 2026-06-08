@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/logger"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
@@ -42,6 +43,26 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 
 	// 写入新的 response body
 	service.IOCopyBytesGracefully(c, resp, responseBody)
+
+	// Capture response text for detailed logging (non-stream)
+	if common.LogDetailEnabled {
+		var respTextBuilder strings.Builder
+		for _, output := range responsesResponse.Output {
+			if output.Type == "message" {
+				for _, content := range output.Content {
+					if content.Type == "output_text" && content.Text != "" {
+						if respTextBuilder.Len() > 0 {
+							respTextBuilder.WriteString("\n")
+						}
+						respTextBuilder.WriteString(content.Text)
+					}
+				}
+			}
+		}
+		if respTextBuilder.Len() > 0 {
+			c.Set(string(constant.ContextKeyLogResponseBody), common.TruncateString(respTextBuilder.String(), common.LogDetailMaxSize))
+		}
+	}
 
 	// compute usage
 	usage := dto.Usage{}
@@ -145,6 +166,11 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 	}
 
 	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+
+	// Capture response text for detailed logging
+	if common.LogDetailEnabled {
+		c.Set(string(constant.ContextKeyLogResponseBody), common.TruncateString(responseTextBuilder.String(), common.LogDetailMaxSize))
+	}
 
 	return usage, nil
 }

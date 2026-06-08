@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
@@ -41,6 +42,24 @@ func GeminiTextGenerationHandler(c *gin.Context, info *relaycommon.RelayInfo, re
 
 	// 计算使用量（基于 UsageMetadata）
 	usage := buildUsageFromGeminiMetadata(geminiResponse.UsageMetadata, info.GetEstimatePromptTokens())
+
+	// Capture response text for detailed logging
+	if common.LogDetailEnabled {
+		var respTextBuilder strings.Builder
+		for _, candidate := range geminiResponse.Candidates {
+			for _, part := range candidate.Content.Parts {
+				if part.Text != "" {
+					if respTextBuilder.Len() > 0 {
+						respTextBuilder.WriteString("\n")
+					}
+					respTextBuilder.WriteString(part.Text)
+				}
+			}
+		}
+		if respTextBuilder.Len() > 0 {
+			c.Set(string(constant.ContextKeyLogResponseBody), common.TruncateString(respTextBuilder.String(), common.LogDetailMaxSize))
+		}
+	}
 
 	service.IOCopyBytesGracefully(c, resp, responseBody)
 

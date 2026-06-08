@@ -1039,6 +1039,56 @@ export function DetailsDialog(props: DetailsDialogProps) {
                 </div>
               </div>
             )}
+
+            {/* Request Body (admin only) */}
+            {props.isAdmin && props.log.request_body && (
+              <DetailSection label={t('Request Content')}>
+                <div className='relative min-w-0'>
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    className='absolute top-0 right-0 h-5 w-5 p-0'
+                    onClick={() => copyToClipboard(props.log.request_body || '')}
+                    title={t('Copy to clipboard')}
+                    aria-label={t('Copy to clipboard')}
+                  >
+                    {copiedText === props.log.request_body ? (
+                      <Check className='size-3 text-green-600' />
+                    ) : (
+                      <Copy className='size-3' />
+                    )}
+                  </Button>
+                  <pre className='bg-background/60 max-h-64 overflow-y-auto rounded border p-2 pr-6 font-mono text-[11px] leading-relaxed break-words whitespace-pre-wrap'>
+                    {props.log.request_body}
+                  </pre>
+                </div>
+              </DetailSection>
+            )}
+
+            {/* Response Body (admin only) */}
+            {props.isAdmin && props.log.response_body && (
+              <DetailSection label={t('Response Content')}>
+                <div className='relative min-w-0'>
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    className='absolute top-0 right-0 h-5 w-5 p-0'
+                    onClick={() => copyToClipboard(props.log.response_body || '')}
+                    title={t('Copy to clipboard')}
+                    aria-label={t('Copy to clipboard')}
+                  >
+                    {copiedText === props.log.response_body ? (
+                      <Check className='size-3 text-green-600' />
+                    ) : (
+                      <Copy className='size-3' />
+                    )}
+                  </Button>
+                  <pre className='bg-background/60 max-h-64 overflow-y-auto rounded border p-2 pr-6 font-mono text-[11px] leading-relaxed break-words whitespace-pre-wrap'>
+                    {props.log.response_body}
+                  </pre>
+                </div>
+              </DetailSection>
+            )}
           </div>
         </ScrollArea>
       </DialogContent>

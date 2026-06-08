@@ -459,6 +459,11 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 		InjectTieredBillingInfo(other, relayInfo, tieredResult)
 	}
 
+	reqBody := common.GetContextKeyString(ctx, constant.ContextKeyLogRequestBody)
+	respBody := common.GetContextKeyString(ctx, constant.ContextKeyLogResponseBody)
+	if common.LogDetailEnabled && (reqBody != "" || respBody != "") {
+		logger.LogInfo(ctx, fmt.Sprintf("log detail: writing to log - reqBody len=%d, respBody len=%d", len(reqBody), len(respBody)))
+	}
 	model.RecordConsumeLog(ctx, relayInfo.UserId, model.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
 		PromptTokens:     summary.PromptTokens,
@@ -472,6 +477,8 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 		IsStream:         relayInfo.IsStream,
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
+		RequestBody:      reqBody,
+		ResponseBody:     respBody,
 	})
 	gopool.Go(func() {
 		perfmetrics.RecordRelaySample(relayInfo, true, int64(summary.CompletionTokens))

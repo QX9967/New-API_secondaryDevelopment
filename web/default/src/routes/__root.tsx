@@ -52,8 +52,8 @@ function RootComponent() {
       <Toaster closeButton duration={5000} position='top-center' richColors />
       {import.meta.env.MODE === 'development' && (
         <>
-          <ReactQueryDevtools buttonPosition='bottom-left' />
-          <TanStackRouterDevtools position='bottom-right' />
+          {/*<ReactQueryDevtools buttonPosition='bottom-left' />*/}
+           {/* <TanStackRouterDevtools position='bottom-right' /> */}
         </>
       )}
     </ThemeCustomizationProvider>
