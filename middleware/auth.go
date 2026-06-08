@@ -358,6 +358,15 @@ func TokenAuth() func(c *gin.Context) {
 				return
 			}
 			if common.IsIpInCIDRList(ip, allowIps) == false {
+				// 记录 IP 限制拒绝日志
+				other := map[string]interface{}{
+					"reject_reason": "IP not in allow list",
+					"client_ip":     clientIp,
+					"allow_ips":     allowIps,
+				}
+				model.RecordErrorLog(c, token.UserId, 0, "", token.Name,
+					fmt.Sprintf("IP %s not in token allow list", clientIp),
+					token.Id, 0, false, token.Group, other, "", "")
 				abortWithOpenAiMessage(c, http.StatusForbidden, "您的 IP 不在令牌允许访问的列表中", types.ErrorCodeAccessDenied)
 				return
 			}
