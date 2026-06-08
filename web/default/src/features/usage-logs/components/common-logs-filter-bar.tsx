@@ -79,6 +79,39 @@ export function CommonLogsFilterBar<TData>(
     return { startTime: start, endTime: end }
   })
   const [logType, setLogType] = useState<LogTypeValue>(LOG_TYPE_ALL_VALUE)
+  const [initialized, setInitialized] = useState(false)
+
+  // On mount, clear stale search params from URL (e.g. after account switch)
+  useEffect(() => {
+    if (initialized) return
+    setInitialized(true)
+
+    const hasStaleParams =
+      searchParams.model ||
+      searchParams.key ||
+      searchParams.token ||
+      searchParams.group ||
+      searchParams.username ||
+      searchParams.channel ||
+      searchParams.requestId ||
+      searchParams.upstreamRequestId
+
+    if (hasStaleParams) {
+      const { start, end } = getDefaultTimeRange()
+      navigate({
+        to: '/usage-logs/$section',
+        params: { section: 'common' },
+        search: {
+          page: 1,
+          type: [LOG_TYPE_ALL_VALUE],
+          startTime: start.getTime(),
+          endTime: end.getTime(),
+        },
+        replace: true,
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialized])
 
   useEffect(() => {
     const { start, end } = getDefaultTimeRange()

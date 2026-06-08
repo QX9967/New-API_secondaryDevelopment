@@ -334,10 +334,18 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 		tx = LOG_DB.Where("logs.type = ?", logType)
 	}
 
-	// If searching by key, join with tokens table
+	// If searching by key, join with tokens table (fuzzy search)
 	if tokenKey != "" {
-		tx = tx.Joins("LEFT JOIN tokens ON tokens.id = logs.token_id").
-			Where("tokens.key = ?", tokenKey)
+		tx = tx.Joins("LEFT JOIN tokens ON tokens.id = logs.token_id")
+		if strings.Contains(tokenKey, "%") {
+			pattern, err := sanitizeLikePattern(tokenKey)
+			if err != nil {
+				return nil, 0, err
+			}
+			tx = tx.Where("tokens.key LIKE ? ESCAPE '!'", pattern)
+		} else {
+			tx = tx.Where("tokens.key LIKE ?", "%"+tokenKey+"%")
+		}
 	}
 
 	if tx, err = applyExplicitLogTextFilter(tx, "logs.model_name", modelName); err != nil {
@@ -450,10 +458,18 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 		tx = LOG_DB.Where("logs.user_id = ? and logs.type = ?", userId, logType)
 	}
 
-	// If searching by key, join with tokens table
+	// If searching by key, join with tokens table (fuzzy search)
 	if tokenKey != "" {
-		tx = tx.Joins("LEFT JOIN tokens ON tokens.id = logs.token_id").
-			Where("tokens.key = ? AND tokens.user_id = ?", tokenKey, userId)
+		tx = tx.Joins("LEFT JOIN tokens ON tokens.id = logs.token_id")
+		if strings.Contains(tokenKey, "%") {
+			pattern, err := sanitizeLikePattern(tokenKey)
+			if err != nil {
+				return nil, 0, err
+			}
+			tx = tx.Where("tokens.key LIKE ? ESCAPE '!' AND tokens.user_id = ?", pattern, userId)
+		} else {
+			tx = tx.Where("tokens.key LIKE ? AND tokens.user_id = ?", "%"+tokenKey+"%", userId)
+		}
 	}
 
 	if tx, err = applyExplicitLogTextFilter(tx, "logs.model_name", modelName); err != nil {
