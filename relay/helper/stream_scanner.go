@@ -218,6 +218,11 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 			logger.LogDebug(c, "scanner goroutine exited")
 		}()
 
+		encryptionEnabled := info.ChannelSetting.EncryptionEnabled && info.ChannelSetting.EncryptionKey != ""
+		if encryptionEnabled {
+			logger.LogDebug(c, "stream decryption enabled")
+		}
+
 		for scanner.Scan() {
 			// 检查是否需要停止
 			select {
@@ -246,6 +251,17 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 			if data == "" {
 				continue
 			}
+
+			if encryptionEnabled && !strings.HasPrefix(data, "[DONE]") {
+				decrypted, err := common.AESDecryptGCM(info.ChannelSetting.EncryptionKey, []byte(data))
+				if err != nil {
+					logger.LogWarn(c, fmt.Sprintf("stream decrypt failed: %v, using raw data", err))
+				} else {
+					data = string(decrypted)
+					logger.LogDebug(c, "stream data decrypted successfully")
+				}
+			}
+
 			if !strings.HasPrefix(data, "[DONE]") {
 				info.SetFirstResponseTime()
 				info.ReceivedResponseCount++
