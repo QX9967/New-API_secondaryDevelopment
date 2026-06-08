@@ -467,7 +467,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
   }
 
   columns.push({
-    accessorKey: 'key',
+    accessorKey: 'token_name',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title={t('Token')} />
     ),
