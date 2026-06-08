@@ -219,7 +219,7 @@ export function LogSettingsSection({
             render={({ field }) => (
               <SettingsSwitchItem>
                 <SettingsSwitchContent>
-                  <FormLabel>{t('Record IP address')}</FormLabel>
+                  <FormLabel>{t('Record IP Address')}</FormLabel>
                   <FormDescription>
                     {t(
                       'Log the client IP address for every API request. Useful for auditing and security monitoring.'

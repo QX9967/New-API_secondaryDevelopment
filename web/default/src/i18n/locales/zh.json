@@ -3201,6 +3201,7 @@
     "Recommended actions": "推荐操作",
     "Recommended to keep this high to avoid upstream throttling.": "建议保持此值较高，以避免上游限流。",
     "Record IP Address": "记录 IP 地址",
+    "Log the client IP address for every API request. Useful for auditing and security monitoring.": "记录每次 API 请求的客户端 IP 地址，用于审计和安全监控。",
     "Record quota usage": "记录配额使用量",
     "Recursion Strategy": "递归策略",
     "Recursive": "递归",
