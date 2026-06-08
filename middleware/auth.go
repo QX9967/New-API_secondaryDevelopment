@@ -365,7 +365,7 @@ func TokenAuth() func(c *gin.Context) {
 					"allow_ips":     allowIps,
 				}
 				model.RecordErrorLog(c, token.UserId, 0, "", token.Name,
-					fmt.Sprintf("IP %s not in token allow list", clientIp),
+					fmt.Sprintf("IP %s 不在可访问列表中", clientIp),
 					token.Id, 0, false, token.Group, other, "", "")
 				abortWithOpenAiMessage(c, http.StatusForbidden, "您的 IP 不在令牌允许访问的列表中", types.ErrorCodeAccessDenied)
 				return

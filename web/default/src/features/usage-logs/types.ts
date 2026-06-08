@@ -48,6 +48,7 @@ export interface CommonFilters {
  */
 export interface CommonLogFilters extends CommonFilters {
   model?: string
+  key?: string
   token?: string
   group?: string
   username?: string
@@ -266,6 +267,7 @@ export interface GetLogsParams {
   username?: string
   token_name?: string
   model_name?: string
+  key?: string
   start_timestamp?: number
   end_timestamp?: number
   channel?: number

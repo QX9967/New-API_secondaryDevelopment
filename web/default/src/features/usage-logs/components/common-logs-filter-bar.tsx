@@ -89,6 +89,7 @@ export function CommonLogsFilterBar<TData>(
       endTime: searchParams.endTime ? new Date(searchParams.endTime) : end,
       channel: searchParams.channel || undefined,
       model: searchParams.model || undefined,
+      key: searchParams.key || undefined,
       token: searchParams.token || undefined,
       group: searchParams.group || undefined,
       username: searchParams.username || undefined,
@@ -109,6 +110,7 @@ export function CommonLogsFilterBar<TData>(
     searchParams.endTime,
     searchParams.channel,
     searchParams.model,
+    searchParams.key,
     searchParams.token,
     searchParams.group,
     searchParams.username,
@@ -167,6 +169,7 @@ export function CommonLogsFilterBar<TData>(
   )
 
   const hasExpandedFilters =
+    !!filters.key ||
     !!filters.token ||
     !!filters.username ||
     !!filters.channel ||
@@ -178,6 +181,7 @@ export function CommonLogsFilterBar<TData>(
     !!filters.model || !!filters.group || hasTypeFilter || hasExpandedFilters
 
   const expandedFilterCount = [
+    filters.key,
     filters.token,
     isAdmin ? filters.username : undefined,
     isAdmin ? filters.channel : undefined,
@@ -283,6 +287,15 @@ export function CommonLogsFilterBar<TData>(
     <>
       <LogsFilterField>
         <LogsFilterInput
+          placeholder={t('Key')}
+          type={sensitiveType}
+          value={filters.key || ''}
+          onChange={(e) => handleChange('key', e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+      </LogsFilterField>
+      <LogsFilterField>
+        <LogsFilterInput
           placeholder={t('Token Name')}
           type={sensitiveType}
           value={filters.token || ''}
@@ -337,23 +350,23 @@ export function CommonLogsFilterBar<TData>(
       primaryFilters={
         <>
           {dateRangeFilter}
+          {typeFilter}
           {modelFilter}
           {groupFilter}
-          {typeFilter}
         </>
       }
       advancedFilters={advancedFilters}
       mobilePinnedFilters={dateRangeFilter}
       mobileFilters={
         <>
+          {typeFilter}
           {modelFilter}
           {groupFilter}
-          {typeFilter}
           {advancedFilters}
         </>
       }
       mobileFilterCount={
-        [filters.model, filters.group, hasTypeFilter].filter(Boolean).length +
+        [hasTypeFilter, filters.model, filters.group].filter(Boolean).length +
         expandedFilterCount
       }
       hasAdvancedActiveFilters={hasExpandedFilters}
