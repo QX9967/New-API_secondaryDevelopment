@@ -7,6 +7,8 @@ type ChannelSettings struct {
 	PassThroughBodyEnabled bool   `json:"pass_through_body_enabled,omitempty"`
 	SystemPrompt           string `json:"system_prompt,omitempty"`
 	SystemPromptOverride   bool   `json:"system_prompt_override,omitempty"`
+	EncryptionEnabled      bool   `json:"encryption_enabled,omitempty"`
+	EncryptionKey          string `json:"encryption_key,omitempty"`
 }
 
 type VertexKeyType string
