@@ -48,11 +48,14 @@ type Log struct {
 	ChannelId         int    `json:"channel" gorm:"index"`
 	ChannelName       string `json:"channel_name" gorm:"->"`
 	TokenId           int    `json:"token_id" gorm:"default:0;index"`
+	Key               string `json:"key" gorm:"-"`
 	Group             string `json:"group" gorm:"index"`
 	Ip                string `json:"ip" gorm:"index;default:''"`
 	RequestId         string `json:"request_id,omitempty" gorm:"type:varchar(64);index:idx_logs_request_id;default:''"`
 	UpstreamRequestId string `json:"upstream_request_id,omitempty" gorm:"type:varchar(128);index:idx_logs_upstream_request_id;default:''"`
 	Other             string `json:"other"`
+	RequestBody       string `json:"request_body,omitempty" gorm:"type:text"`
+	ResponseBody      string `json:"response_body,omitempty" gorm:"type:text"`
 }
 
 // don't use iota, avoid change log type value
@@ -69,6 +72,8 @@ const (
 func formatUserLogs(logs []*Log, startIdx int) {
 	for i := range logs {
 		logs[i].ChannelName = ""
+		logs[i].RequestBody = ""
+		logs[i].ResponseBody = ""
 		var otherMap map[string]interface{}
 		otherMap, _ = common.StrToMap(logs[i].Other)
 		if otherMap != nil {
@@ -159,7 +164,7 @@ func RecordTopupLog(userId int, content string, callerIp string, paymentMethod s
 }
 
 func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string, tokenName string, content string, tokenId int, useTimeSeconds int,
-	isStream bool, group string, other map[string]interface{}) {
+	isStream bool, group string, other map[string]interface{}, requestBody string, responseBody string) {
 	logger.LogInfo(c, fmt.Sprintf("record error log: userId=%d, channelId=%d, modelName=%s, tokenName=%s, content=%s", userId, channelId, modelName, tokenName, common.LocalLogPreview(content)))
 	username := c.GetString("username")
 	requestId := c.GetString(common.RequestIdKey)
@@ -197,6 +202,8 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 		RequestId:         requestId,
 		UpstreamRequestId: upstreamRequestId,
 		Other:             otherStr,
+		RequestBody:       requestBody,
+		ResponseBody:      responseBody,
 	}
 	err := LOG_DB.Create(log).Error
 	if err != nil {
@@ -217,6 +224,8 @@ type RecordConsumeLogParams struct {
 	IsStream         bool                   `json:"is_stream"`
 	Group            string                 `json:"group"`
 	Other            map[string]interface{} `json:"other"`
+	RequestBody      string                 `json:"request_body"`
+	ResponseBody     string                 `json:"response_body"`
 }
 
 func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams) {
@@ -260,6 +269,8 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 		RequestId:         requestId,
 		UpstreamRequestId: upstreamRequestId,
 		Other:             otherStr,
+		RequestBody:       params.RequestBody,
+		ResponseBody:      params.ResponseBody,
 	}
 	err := LOG_DB.Create(log).Error
 	if err != nil {
@@ -360,9 +371,13 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	}
 
 	channelIds := types.NewSet[int]()
+	tokenIds := types.NewSet[int]()
 	for _, log := range logs {
 		if log.ChannelId != 0 {
 			channelIds.Add(log.ChannelId)
+		}
+		if log.TokenId != 0 {
+			tokenIds.Add(log.TokenId)
 		}
 	}
 
@@ -396,6 +411,23 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 		}
 		for i := range logs {
 			logs[i].ChannelName = channelMap[logs[i].ChannelId]
+		}
+	}
+
+	if tokenIds.Len() > 0 {
+		var tokens []struct {
+			Id  int    `gorm:"column:id"`
+			Key string `gorm:"column:key"`
+		}
+		if err = DB.Table("tokens").Select("id, key").Where("id IN ?", tokenIds.Items()).Find(&tokens).Error; err != nil {
+			return logs, total, err
+		}
+		tokenMap := make(map[int]string, len(tokens))
+		for _, token := range tokens {
+			tokenMap[token.Id] = token.Key
+		}
+		for i := range logs {
+			logs[i].Key = tokenMap[logs[i].TokenId]
 		}
 	}
 
@@ -442,6 +474,30 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 	if err != nil {
 		common.SysError("failed to search user logs: " + err.Error())
 		return nil, 0, errors.New("查询日志失败")
+	}
+
+	tokenIds := types.NewSet[int]()
+	for _, log := range logs {
+		if log.TokenId != 0 {
+			tokenIds.Add(log.TokenId)
+		}
+	}
+
+	if tokenIds.Len() > 0 {
+		var tokens []struct {
+			Id  int    `gorm:"column:id"`
+			Key string `gorm:"column:key"`
+		}
+		if err = DB.Table("tokens").Select("id, key").Where("id IN ? AND user_id = ?", tokenIds.Items(), userId).Find(&tokens).Error; err != nil {
+			return logs, total, err
+		}
+		tokenMap := make(map[int]string, len(tokens))
+		for _, token := range tokens {
+			tokenMap[token.Id] = token.Key
+		}
+		for i := range logs {
+			logs[i].Key = tokenMap[logs[i].TokenId]
+		}
 	}
 
 	formatUserLogs(logs, startIdx)
