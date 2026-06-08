@@ -40,11 +40,14 @@ export const usageLogSchema = z.object({
   channel: z.number().default(0),
   channel_name: z.string().nullish().default(''),
   token_id: z.number().default(0),
+  key: z.string().default(''),
   group: z.string().default(''),
   ip: z.string().default(''),
   other: z.string().default(''),
   request_id: z.string().default(''),
   upstream_request_id: z.string().default(''),
+  request_body: z.string().nullish().default(''),
+  response_body: z.string().nullish().default(''),
 })
 
 export type UsageLog = z.infer<typeof usageLogSchema>
