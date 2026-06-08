@@ -479,42 +479,37 @@ export function DetailsDialog(props: DetailsDialogProps) {
     useChannel && useChannel.length > 0 ? useChannel.join(' → ') : undefined
 
   return (
-    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent
-        className={cn(
-          'min-w-0 overflow-hidden',
-          'max-sm:max-h-[calc(100dvh-1.5rem)] max-sm:w-[calc(100vw-1.5rem)] max-sm:max-w-[calc(100vw-1.5rem)] max-sm:p-4',
-          isTieredBilling ? 'sm:max-w-4xl lg:max-w-5xl' : 'sm:max-w-lg'
-        )}
-      >
-        <DialogHeader className='max-sm:gap-1'>
-          <DialogTitle className='flex items-center gap-2 text-base'>
-            {t('Log Details')}
-            <StatusBadge
-              label={t(typeConfig.label)}
-              variant={typeConfig.color as StatusBadgeProps['variant']}
-              size='sm'
-              copyable={false}
-            />
-          </DialogTitle>
-          <DialogDescription className='sr-only'>
-            {t('View the complete details for this log entry')}
-          </DialogDescription>
-        </DialogHeader>
-
-        <ScrollArea className='max-h-[70vh] min-w-0 overflow-hidden pr-2 max-sm:max-h-[calc(100dvh-7rem)] sm:pr-4'>
-          <div className='w-full max-w-full min-w-0 space-y-2.5 overflow-hidden py-1 sm:space-y-3'>
-            {/* Overview section - key identifiers */}
-            <div className='min-w-0 space-y-1'>
-              {props.log.request_id && (
-                <DetailRow
-                  label={t('Request ID')}
-                  value={props.log.request_id}
-                  mono
-                />
-              )}
-              {props.log.upstream_request_id && (
-                <DetailRow
+    <Dialog
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      title={
+        <>
+          {t('Log Details')}
+          <StatusBadge
+            label={t(typeConfig.label)}
+            variant={typeConfig.color as StatusBadgeProps['variant']}
+            size='sm'
+            copyable={false}
+          />
+        </>
+      }
+      description={t('View the complete details for this log entry')}
+      contentClassName={cn(
+        'min-w-0 overflow-hidden',
+        'max-sm:max-h-[calc(100dvh-1.5rem)] max-sm:w-[calc(100vw-1.5rem)] max-sm:max-w-[calc(100vw-1.5rem)] max-sm:p-4',
+        isTieredBilling ? 'sm:max-w-4xl lg:max-w-5xl' : 'sm:max-w-lg'
+      )}
+      headerClassName='max-sm:gap-1'
+      titleClassName='flex items-center gap-2 text-base'
+      descriptionClassName='sr-only'
+      contentHeight='min(72vh, 720px)'
+      bodyClassName='space-y-4'
+    >
+      <ScrollArea className='max-h-[70vh] min-w-0 overflow-hidden pr-2 max-sm:max-h-[calc(100dvh-7rem)] sm:pr-4'>
+        <div className='w-full max-w-full min-w-0 space-y-2.5 overflow-hidden py-1 sm:space-y-3'>
+          {/* Overview section - key identifiers */}
+          <div className='min-w-0 space-y-1'>
+            {props.log.request_id && (
               <DetailRow
                 label={t('Request ID')}
                 value={props.log.request_id}
@@ -892,204 +887,203 @@ export function DetailsDialog(props: DetailsDialogProps) {
               />
             )}
 
-            {/* Stream status details (admin only) */}
-            {props.isAdmin &&
-              other?.stream_status &&
-              other.stream_status.status !== 'ok' && (
-                <DetailSection label={t('Stream Status')}>
+          {/* Stream status details (admin only) */}
+          {props.isAdmin &&
+            other?.stream_status &&
+            other.stream_status.status !== 'ok' && (
+              <DetailSection label={t('Stream Status')}>
+                <DetailRow
+                  label={t('Status')}
+                  value={
+                    <StatusBadge
+                      label={other.stream_status.status || t('Error')}
+                      variant='red'
+                      size='sm'
+                      copyable={false}
+                    />
+                  }
+                />
+                {other.stream_status.end_reason && (
                   <DetailRow
-                    label={t('Status')}
-                    value={
-                      <StatusBadge
-                        label={other.stream_status.status || t('Error')}
-                        variant='red'
-                        size='sm'
-                        copyable={false}
-                      />
-                    }
+                    label={t('End Reason')}
+                    value={other.stream_status.end_reason}
                   />
-                  {other.stream_status.end_reason && (
-                    <DetailRow
-                      label={t('End Reason')}
-                      value={other.stream_status.end_reason}
-                    />
+                )}
+                {(other.stream_status.error_count ?? 0) > 0 && (
+                  <DetailRow
+                    label={t('Soft Errors')}
+                    value={String(other.stream_status.error_count)}
+                  />
+                )}
+                {other.stream_status.end_error && (
+                  <DetailRow
+                    label={t('End Error')}
+                    value={other.stream_status.end_error}
+                  />
+                )}
+                {Array.isArray(other.stream_status.errors) &&
+                  other.stream_status.errors.length > 0 && (
+                    <pre className='bg-background/60 mt-1 max-h-32 overflow-y-auto rounded border p-2 font-mono text-[11px] leading-relaxed break-words whitespace-pre-wrap'>
+                      {other.stream_status.errors.join('\n')}
+                    </pre>
                   )}
-                  {(other.stream_status.error_count ?? 0) > 0 && (
-                    <DetailRow
-                      label={t('Soft Errors')}
-                      value={String(other.stream_status.error_count)}
-                    />
-                  )}
-                  {other.stream_status.end_error && (
-                    <DetailRow
-                      label={t('End Error')}
-                      value={other.stream_status.end_error}
-                    />
-                  )}
-                  {Array.isArray(other.stream_status.errors) &&
-                    other.stream_status.errors.length > 0 && (
-                      <pre className='bg-background/60 mt-1 max-h-32 overflow-y-auto rounded border p-2 font-mono text-[11px] leading-relaxed break-words whitespace-pre-wrap'>
-                        {other.stream_status.errors.join('\n')}
-                      </pre>
-                    )}
-                </DetailSection>
+              </DetailSection>
+            )}
+
+          {/* Subscription billing details */}
+          {isSubscription && other && (
+            <DetailSection label={t('Subscription Billing')}>
+              {other.subscription_plan_id && (
+                <DetailRow
+                  label={t('Plan')}
+                  value={`#${other.subscription_plan_id} ${other.subscription_plan_title || ''}`.trim()}
+                />
               )}
+              {other.subscription_id && (
+                <DetailRow
+                  label={t('Instance')}
+                  value={`#${other.subscription_id}`}
+                  mono
+                />
+              )}
+              {other.subscription_pre_consumed != null && (
+                <DetailRow
+                  label={t('Pre-consumed')}
+                  value={formatLogQuota(other.subscription_pre_consumed)}
+                  mono
+                />
+              )}
+              {other.subscription_post_delta != null &&
+                other.subscription_post_delta !== 0 && (
+                  <DetailRow
+                    label={t('Post Delta')}
+                    value={formatLogQuota(other.subscription_post_delta)}
+                    mono
+                  />
+                )}
+              {other.subscription_consumed != null && (
+                <DetailRow
+                  label={t('Final Consumed')}
+                  value={formatLogQuota(other.subscription_consumed)}
+                  mono
+                />
+              )}
+              {other.subscription_remain != null && (
+                <DetailRow
+                  label={t('Remaining')}
+                  value={`${formatLogQuota(other.subscription_remain)}${other.subscription_total != null ? ` / ${formatLogQuota(other.subscription_total)}` : ''}`}
+                  mono
+                />
+              )}
+            </DetailSection>
+          )}
 
-            {/* Subscription billing details */}
-            {isSubscription && other && (
-              <DetailSection label={t('Subscription Billing')}>
-                {other.subscription_plan_id && (
-                  <DetailRow
-                    label={t('Plan')}
-                    value={`#${other.subscription_plan_id} ${other.subscription_plan_title || ''}`.trim()}
-                  />
-                )}
-                {other.subscription_id && (
-                  <DetailRow
-                    label={t('Instance')}
-                    value={`#${other.subscription_id}`}
-                    mono
-                  />
-                )}
-                {other.subscription_pre_consumed != null && (
-                  <DetailRow
-                    label={t('Pre-consumed')}
-                    value={formatLogQuota(other.subscription_pre_consumed)}
-                    mono
-                  />
-                )}
-                {other.subscription_post_delta != null &&
-                  other.subscription_post_delta !== 0 && (
-                    <DetailRow
-                      label={t('Post Delta')}
-                      value={formatLogQuota(other.subscription_post_delta)}
-                      mono
+          {/* Param override */}
+          {other?.po && Array.isArray(other.po) && other.po.length > 0 && (
+            <DetailSection
+              icon={<Settings2 className='size-3.5' aria-hidden='true' />}
+              label={`${t('Param Override')} (${other.po.length})`}
+            >
+              {other.po.filter(Boolean).map((line, idx) => {
+                const parsed = parseAuditLine(line)
+                if (!parsed) return null
+                return (
+                  <div
+                    key={idx}
+                    className='bg-background/60 flex min-w-0 flex-col gap-1.5 rounded border p-2 sm:flex-row sm:items-start sm:gap-2'
+                  >
+                    <StatusBadge
+                      variant='neutral'
+                      label={getParamOverrideActionLabel(parsed.action, t)}
+                      className='shrink-0 font-medium'
+                      copyable={false}
                     />
+                    <span className='min-w-0 font-mono text-[11px] leading-relaxed break-all sm:break-words'>
+                      {parsed.content}
+                    </span>
+                  </div>
+                )
+              })}
+            </DetailSection>
+          )}
+
+          {/* Content */}
+          {details && (
+            <div className='space-y-1.5'>
+              <Label className='text-xs font-semibold'>{t('Content')}</Label>
+              <div className='bg-muted/30 relative min-w-0 overflow-hidden rounded-md border p-2.5'>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  className='absolute top-1.5 right-1.5 h-5 w-5 p-0'
+                  onClick={() => copyToClipboard(details)}
+                  title={t('Copy to clipboard')}
+                  aria-label={t('Copy to clipboard')}
+                >
+                  {copiedText === details ? (
+                    <Check className='size-3 text-green-600' />
+                  ) : (
+                    <Copy className='size-3' />
                   )}
-                {other.subscription_consumed != null && (
-                  <DetailRow
-                    label={t('Final Consumed')}
-                    value={formatLogQuota(other.subscription_consumed)}
-                    mono
-                  />
-                )}
-                {other.subscription_remain != null && (
-                  <DetailRow
-                    label={t('Remaining')}
-                    value={`${formatLogQuota(other.subscription_remain)}${other.subscription_total != null ? ` / ${formatLogQuota(other.subscription_total)}` : ''}`}
-                    mono
-                  />
-                )}
-              </DetailSection>
-            )}
-
-            {/* Param override */}
-            {other?.po && Array.isArray(other.po) && other.po.length > 0 && (
-              <DetailSection
-                icon={<Settings2 className='size-3.5' aria-hidden='true' />}
-                label={`${t('Param Override')} (${other.po.length})`}
-              >
-                {other.po.filter(Boolean).map((line, idx) => {
-                  const parsed = parseAuditLine(line)
-                  if (!parsed) return null
-                  return (
-                    <div
-                      key={idx}
-                      className='bg-background/60 flex min-w-0 flex-col gap-1.5 rounded border p-2 sm:flex-row sm:items-start sm:gap-2'
-                    >
-                      <StatusBadge
-                        variant='neutral'
-                        label={getParamOverrideActionLabel(parsed.action, t)}
-                        className='shrink-0 font-medium'
-                        copyable={false}
-                      />
-                      <span className='min-w-0 font-mono text-[11px] leading-relaxed break-all sm:break-words'>
-                        {parsed.content}
-                      </span>
-                    </div>
-                  )
-                })}
-              </DetailSection>
-            )}
-
-            {/* Content */}
-            {details && (
-              <div className='space-y-1.5'>
-                <Label className='text-xs font-semibold'>{t('Content')}</Label>
-                <div className='bg-muted/30 relative min-w-0 overflow-hidden rounded-md border p-2.5'>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    className='absolute top-1.5 right-1.5 h-5 w-5 p-0'
-                    onClick={() => copyToClipboard(details)}
-                    title={t('Copy to clipboard')}
-                    aria-label={t('Copy to clipboard')}
-                  >
-                    {copiedText === details ? (
-                      <Check className='size-3 text-green-600' />
-                    ) : (
-                      <Copy className='size-3' />
-                    )}
-                  </Button>
-                  <p className='min-w-0 pr-6 text-xs leading-relaxed break-all whitespace-pre-wrap sm:break-words'>
-                    {details}
-                  </p>
-                </div>
+                </Button>
+                <p className='min-w-0 pr-6 text-xs leading-relaxed break-all whitespace-pre-wrap sm:break-words'>
+                  {details}
+                </p>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Request Body (admin only) */}
-            {props.isAdmin && props.log.request_body && (
-              <DetailSection label={t('Request Content')}>
-                <div className='relative min-w-0'>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    className='absolute top-0 right-0 h-5 w-5 p-0'
-                    onClick={() => copyToClipboard(props.log.request_body || '')}
-                    title={t('Copy to clipboard')}
-                    aria-label={t('Copy to clipboard')}
-                  >
-                    {copiedText === props.log.request_body ? (
-                      <Check className='size-3 text-green-600' />
-                    ) : (
-                      <Copy className='size-3' />
-                    )}
-                  </Button>
-                  <pre className='bg-background/60 max-h-64 overflow-y-auto rounded border p-2 pr-6 font-mono text-[11px] leading-relaxed break-words whitespace-pre-wrap'>
-                    {props.log.request_body}
-                  </pre>
-                </div>
-              </DetailSection>
-            )}
+          {/* Request Body (admin only) */}
+          {props.isAdmin && props.log.request_body && (
+            <DetailSection label={t('Request Content')}>
+              <div className='relative min-w-0'>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  className='absolute top-0 right-0 h-5 w-5 p-0'
+                  onClick={() => copyToClipboard(props.log.request_body || '')}
+                  title={t('Copy to clipboard')}
+                  aria-label={t('Copy to clipboard')}
+                >
+                  {copiedText === props.log.request_body ? (
+                    <Check className='size-3 text-green-600' />
+                  ) : (
+                    <Copy className='size-3' />
+                  )}
+                </Button>
+                <pre className='bg-background/60 max-h-64 overflow-y-auto rounded border p-2 pr-6 font-mono text-[11px] leading-relaxed break-words whitespace-pre-wrap'>
+                  {props.log.request_body}
+                </pre>
+              </div>
+            </DetailSection>
+          )}
 
-            {/* Response Body (admin only) */}
-            {props.isAdmin && props.log.response_body && (
-              <DetailSection label={t('Response Content')}>
-                <div className='relative min-w-0'>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    className='absolute top-0 right-0 h-5 w-5 p-0'
-                    onClick={() => copyToClipboard(props.log.response_body || '')}
-                    title={t('Copy to clipboard')}
-                    aria-label={t('Copy to clipboard')}
-                  >
-                    {copiedText === props.log.response_body ? (
-                      <Check className='size-3 text-green-600' />
-                    ) : (
-                      <Copy className='size-3' />
-                    )}
-                  </Button>
-                  <pre className='bg-background/60 max-h-64 overflow-y-auto rounded border p-2 pr-6 font-mono text-[11px] leading-relaxed break-words whitespace-pre-wrap'>
-                    {props.log.response_body}
-                  </pre>
-                </div>
-              </DetailSection>
-            )}
-          </div>
-        </ScrollArea>
-      </DialogContent>
+          {/* Response Body (admin only) */}
+          {props.isAdmin && props.log.response_body && (
+            <DetailSection label={t('Response Content')}>
+              <div className='relative min-w-0'>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  className='absolute top-0 right-0 h-5 w-5 p-0'
+                  onClick={() => copyToClipboard(props.log.response_body || '')}
+                  title={t('Copy to clipboard')}
+                  aria-label={t('Copy to clipboard')}
+                >
+                  {copiedText === props.log.response_body ? (
+                    <Check className='size-3 text-green-600' />
+                  ) : (
+                    <Copy className='size-3' />
+                  )}
+                </Button>
+                <pre className='bg-background/60 max-h-64 overflow-y-auto rounded border p-2 pr-6 font-mono text-[11px] leading-relaxed break-words whitespace-pre-wrap'>
+                  {props.log.response_body}
+                </pre>
+              </div>
+            </DetailSection>
+          )}
+        </div>
+      </ScrollArea>
     </Dialog>
   )
 }
