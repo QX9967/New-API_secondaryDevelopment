@@ -480,7 +480,10 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
       const tokenName = log.token_name
       if (!apiKey && !tokenName) return null
 
-      const displayKey = sensitiveVisible ? apiKey : '••••'
+      // If no key available, show token_name as primary display
+      const hasKey = apiKey && apiKey.length > 0
+      const displayKey = hasKey ? (sensitiveVisible ? apiKey : '••••') : null
+      const displayName = sensitiveVisible ? tokenName : '••••'
       const other = parseLogOther(log.other)
       let group = log.group
       if (!group) group = other?.group || ''
@@ -493,7 +496,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
       if (groupRatioText) metaParts.push(groupRatioText)
 
       const tooltipLines: string[] = []
-      if (apiKey) tooltipLines.push(apiKey)
+      if (hasKey && apiKey) tooltipLines.push(apiKey)
       if (tokenName) tooltipLines.push(tokenName)
 
       return (
@@ -502,9 +505,9 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
             <Tooltip>
               <TooltipTrigger render={<div className='max-w-full' />}>
                 <StatusBadge
-                  label={displayKey || tokenName || ''}
+                  label={displayKey || displayName || ''}
                   icon={KeyRound}
-                  copyText={sensitiveVisible ? apiKey : undefined}
+                  copyText={sensitiveVisible && hasKey ? apiKey : undefined}
                   size='sm'
                   showDot={false}
                   className='border-border/60 bg-muted/30 text-foreground h-6 max-w-full gap-1.5 overflow-hidden rounded-md border px-2 py-0.5 [font-family:var(--font-body)]'
@@ -521,7 +524,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
               )}
             </Tooltip>
           </TooltipProvider>
-          {tokenName && apiKey && (
+          {tokenName && hasKey && (
             <span className='text-muted-foreground/60 truncate [font-family:var(--font-body)] !text-xs'>
               {sensitiveVisible ? tokenName : '••••'}
             </span>
