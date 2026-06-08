@@ -2125,7 +2125,7 @@
     "Keep the platform ready": "保持平台就绪",
     "Keep this above 1 minute to avoid heavy database load": "保持此值大于 1 分钟以避免数据库负载过重",
     "Keep-alive Ping": "保持连接心跳",
-    "Key": "密钥",
+    "Key": "令牌Key（支持模糊搜索）",
     "Key Fingerprint": "Key 指纹",
     "Key Sources": "Key 来源",
     "Key Summary": "Key 摘要",
