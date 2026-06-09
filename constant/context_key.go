@@ -71,4 +71,9 @@ const (
 	ContextKeyLogRequestBody ContextKey = "log_request_body"
 	// ContextKeyLogResponseBody stores the accumulated response text for detailed logging
 	ContextKeyLogResponseBody ContextKey = "log_response_body"
+
+	// Strategy keys
+	ContextKeyStrategyModels          ContextKey = "strategy_models"
+	ContextKeyStrategyDifficultyLevel ContextKey = "strategy_difficulty_level"
+	ContextKeyStrategyTimeMasked      ContextKey = "strategy_time_masked"
 )
