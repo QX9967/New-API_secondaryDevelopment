@@ -14,7 +14,7 @@ import httpx
 from fastapi import FastAPI, Request, Header
 from fastapi.responses import StreamingResponse, JSONResponse, Response
 
-app = FastAPI(title="Mock AI Provider")
+app = FastAPI(title="模拟 AI 供应商")
 
 client = httpx.AsyncClient(timeout=120.0)
 
@@ -30,7 +30,7 @@ ENCRYPTION_KEY = "Dgp47/nkakUdFT0EHXxIntZSt6+RXgULphevrfCgYiM="  # 填入你的�
 # =======================================
 
 
-# ============= Encryption Support =============
+# ============= 加密支持 =============
 
 def decrypt_data(ciphertext: bytes, key_base64: str) -> bytes:
     """AES-256-GCM 解密"""
@@ -60,13 +60,13 @@ def print_separator(title: str):
     print("=" * 60)
 
 
-# ============= Routes =============
+# ============= 路由 =============
 
 @app.get("/")
 async def root():
     return {
-        "message": "Mock AI Provider Server",
-        "status": "running",
+        "message": "模拟 AI 供应商服务器",
+        "status": "运行中",
         "upstream": UPSTREAM_URL,
         "encryption_enabled": bool(ENCRYPTION_KEY)
     }
@@ -93,30 +93,30 @@ async def chat_completions(
     raw_body = await request.body()
     is_encrypted = x_encryption_enabled == "true"
 
-    print_separator("REQUEST RECEIVED")
-    print(f"[Header] X-Encryption-Enabled: {x_encryption_enabled}")
-    print(f"[Raw Body Length]: {len(raw_body)} bytes")
+    print_separator("收到请求")
+    print(f"[请求头] X-Encryption-Enabled: {x_encryption_enabled}")
+    print(f"[原始请求体长度]: {len(raw_body)} 字节")
 
     # 解密请求
     if is_encrypted and ENCRYPTION_KEY:
         try:
-            print("\n[Decrypting request...]")
-            print(f"[Encrypted Body (hex)]: {raw_body[:50].hex()}...")
+            print("\n[正在解密请求...]")
+            print(f"[加密请求体 (十六进制)]: {raw_body[:50].hex()}...")
             decrypted_body = decrypt_data(raw_body, ENCRYPTION_KEY)
-            print(f"[Decrypted Body]:")
+            print(f"[解密后请求体]:")
             print("-" * 40)
             print(decrypted_body.decode('utf-8'))
             print("-" * 40)
             body = decrypted_body
         except Exception as e:
-            print(f"[Decryption Error]: {e}")
+            print(f"[解密失败]: {e}")
             return JSONResponse(
                 status_code=400,
-                content={"error": {"message": f"Decryption failed: {str(e)}"}}
+                content={"error": {"message": f"解密失败: {str(e)}"}}
             )
     else:
         body = raw_body
-        print(f"[Body (plaintext)]:")
+        print(f"[请求体 (明文)]:")
         print("-" * 40)
         print(body.decode('utf-8')[:300])
         print("-" * 40)
@@ -128,10 +128,10 @@ async def chat_completions(
         stream = req_data.get("stream", False)
         messages = req_data.get("messages", [])
         last_msg = messages[-1].get("content", "")[:50] if messages else ""
-        print(f"\n[Request Info]")
-        print(f"  Model: {model}")
-        print(f"  Stream: {stream}")
-        print(f"  Message: {last_msg}...")
+        print(f"\n[请求信息]")
+        print(f"  模型: {model}")
+        print(f"  流式: {stream}")
+        print(f"  消息: {last_msg}...")
     except:
         stream = False
 
@@ -141,7 +141,7 @@ async def chat_completions(
         "Content-Type": "application/json",
     }
 
-    print(f"\n[Forwarding to]: {UPSTREAM_URL}")
+    print(f"\n[转发至]: {UPSTREAM_URL}")
 
     if stream:
         async def generate():
@@ -164,14 +164,14 @@ async def chat_completions(
                                 encrypted = encrypt_data(payload.encode('utf-8'), ENCRYPTION_KEY)
                                 yield f"data: {encrypted.hex()}\n\n"
                                 if chunk_count <= 3:
-                                    print(f"[Chunk {chunk_count}] Encrypted: {encrypted[:20].hex()}...")
+                                    print(f"[数据块 {chunk_count}] 已加密: {encrypted[:20].hex()}...")
                             except Exception as e:
-                                print(f"[Encryption Error]: {e}")
+                                print(f"[加密失败]: {e}")
                         else:
                             yield f"data: {payload}\n\n"
                             if chunk_count <= 3:
-                                print(f"[Chunk {chunk_count}]: {payload[:60]}...")
-                print(f"[Total Chunks]: {chunk_count}")
+                                print(f"[数据块 {chunk_count}]: {payload[:60]}...")
+                print(f"[总数据块数]: {chunk_count}")
 
         return StreamingResponse(
             generate(),
@@ -187,29 +187,29 @@ async def chat_completions(
         )
         response_data = resp.json()
 
-        print_separator("RESPONSE")
+        print_separator("响应")
 
         if is_encrypted and ENCRYPTION_KEY:
             try:
                 response_json = json.dumps(response_data)
-                print(f"[Response (plaintext)]:")
+                print(f"[响应 (明文)]:")
                 print("-" * 40)
                 print(response_json[:300])
                 print("-" * 40)
                 encrypted = encrypt_data(response_json.encode('utf-8'), ENCRYPTION_KEY)
-                print(f"[Response (encrypted)]:")
-                print(f"  Length: {len(encrypted)} bytes")
-                print(f"  Hex: {encrypted[:50].hex()}...")
+                print(f"[响应 (已加密)]:")
+                print(f"  长度: {len(encrypted)} 字节")
+                print(f"  十六进制: {encrypted[:50].hex()}...")
                 return Response(
                     content=encrypted,
                     media_type="application/json",
                     headers={"X-Encryption-Enabled": "true"}
                 )
             except Exception as e:
-                print(f"[Encryption Error]: {e}")
+                print(f"[加密失败]: {e}")
                 return response_data
         else:
-            print(f"[Response (plaintext)]:")
+            print(f"[响应 (明文)]:")
             print("-" * 40)
             print(json.dumps(response_data, indent=2)[:300])
             print("-" * 40)
@@ -221,11 +221,11 @@ if __name__ == "__main__":
 
     print()
     print("=" * 60)
-    print("  Mock AI Provider Server")
+    print("  模拟 AI 供应商服务器")
     print("=" * 60)
-    print(f"  Upstream:  {UPSTREAM_URL}")
-    print(f"  Encryption: {'Enabled' if ENCRYPTION_KEY else 'Disabled'}")
-    print(f"  Local:     http://localhost:8080")
+    print(f"  上游地址:  {UPSTREAM_URL}")
+    print(f"  加密: {'已启用' if ENCRYPTION_KEY else '未启用'}")
+    print(f"  本地地址:  http://localhost:8080")
     print("=" * 60)
     print()
 
