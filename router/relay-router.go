@@ -66,6 +66,20 @@ func SetRelayRouter(router *gin.Engine) {
 	{
 		playgroundRouter.POST("/chat/completions", controller.Playground)
 	}
+	compatRouter := router.Group("")
+	compatRouter.Use(middleware.RouteTag("relay"))
+	compatRouter.Use(middleware.SystemPerformanceCheck())
+	compatRouter.Use(middleware.TokenAuth())
+	compatRouter.Use(middleware.ModelRequestRateLimit())
+	compatRouter.Use(middleware.Distribute())
+	{
+		compatRouter.POST("/chat/completions", func(c *gin.Context) {
+			c.Request.URL.Path = "/v1/chat/completions"
+			c.Request.URL.RawPath = "/v1/chat/completions"
+			c.Request.RequestURI = "/v1/chat/completions"
+			controller.Relay(c, types.RelayFormatOpenAI)
+		})
+	}
 	relayV1Router := router.Group("/v1")
 	relayV1Router.Use(middleware.RouteTag("relay"))
 	relayV1Router.Use(middleware.SystemPerformanceCheck())

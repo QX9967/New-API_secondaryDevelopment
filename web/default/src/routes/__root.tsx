@@ -53,7 +53,7 @@ function RootComponent() {
       {import.meta.env.MODE === 'development' && (
         <>
           {/*<ReactQueryDevtools buttonPosition='bottom-left' />*/}
-           {/* <TanStackRouterDevtools position='bottom-right' /> */}
+          {/* <TanStackRouterDevtools position='bottom-right' /> */}
         </>
       )}
     </ThemeCustomizationProvider>

@@ -86,6 +86,8 @@ export interface ChannelSettings {
   pass_through_body_enabled?: boolean
   system_prompt?: string
   system_prompt_override?: boolean
+  encryption_enabled?: boolean
+  encryption_key?: string
 }
 
 export interface ChannelOtherSettings {

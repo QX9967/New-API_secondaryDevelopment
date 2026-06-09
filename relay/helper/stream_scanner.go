@@ -3,6 +3,7 @@ package helper
 import (
 	"bufio"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -253,7 +254,13 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 			}
 
 			if encryptionEnabled && !strings.HasPrefix(data, "[DONE]") {
-				decrypted, err := common.AESDecryptGCM(info.ChannelSetting.EncryptionKey, []byte(data))
+				// 数据可能是十六进制编码的加密数据
+				decryptedBytes, err := hex.DecodeString(data)
+				if err != nil {
+					// 不是十六进制，直接尝试解密
+					decryptedBytes = []byte(data)
+				}
+				decrypted, err := common.AESDecryptGCM(info.ChannelSetting.EncryptionKey, decryptedBytes)
 				if err != nil {
 					logger.LogWarn(c, fmt.Sprintf("stream decrypt failed: %v, using raw data", err))
 				} else {

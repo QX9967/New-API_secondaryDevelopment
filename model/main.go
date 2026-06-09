@@ -15,6 +15,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var commonGroupCol string
@@ -64,6 +65,10 @@ func initCol() {
 var DB *gorm.DB
 
 var LOG_DB *gorm.DB
+
+func silentDB() *gorm.DB {
+	return DB.Session(&gorm.Session{Logger: logger.Default.LogMode(logger.Silent)})
+}
 
 func createRootAccountIfNeed() error {
 	var user User

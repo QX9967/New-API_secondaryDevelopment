@@ -10,6 +10,7 @@ import (
 	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/logger"
+	"github.com/QuantumNous/new-api/relay/channel"
 	"github.com/QuantumNous/new-api/relay/channel/openrouter"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/relay/helper"
@@ -202,6 +203,22 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
+
+	// 如果启用了加密，解密响应体
+	if info.ChannelSetting.EncryptionEnabled && info.ChannelSetting.EncryptionKey != "" {
+		logger.LogDebug(c, "encryption enabled, attempting to decrypt response body (length: %d)", len(responseBody))
+		decrypted, decErr := channel.DecryptResponseBody(info.ChannelSetting.EncryptionKey, responseBody)
+		if decErr != nil {
+			logger.LogWarn(c, fmt.Sprintf("decrypt response failed: %v, using raw body", decErr))
+		} else {
+			responseBody = decrypted
+			logger.LogDebug(c, "response body decrypted successfully (length: %d)", len(responseBody))
+		}
+	} else {
+		logger.LogDebug(c, "encryption not enabled or key not set (enabled: %v, key length: %d)", 
+			info.ChannelSetting.EncryptionEnabled, len(info.ChannelSetting.EncryptionKey))
+	}
+
 	logger.LogDebug(c, "upstream response body: %s", responseBody)
 	// Unmarshal to simpleResponse
 	if info.ChannelType == constant.ChannelTypeOpenRouter && info.ChannelOtherSettings.IsOpenRouterEnterprise() {

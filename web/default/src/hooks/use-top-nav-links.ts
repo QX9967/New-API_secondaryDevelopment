@@ -89,7 +89,11 @@ export function useTopNavLinks(): TopNavLink[] {
   const checkQuota = modules?.checkQuota
   if (checkQuota && typeof checkQuota === 'object' && checkQuota.enabled) {
     const requiresAuth = checkQuota.requireAuth && !isAuthed
-    links.push({ title: t('Check Key Quota'), href: '/check-quota', requiresAuth })
+    links.push({
+      title: t('Check Key Quota'),
+      href: '/check-quota',
+      requiresAuth,
+    })
   }
 
   // Docs (supports external links)

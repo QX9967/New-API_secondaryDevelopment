@@ -616,3 +616,19 @@ export async function getPrefillGroups(
   const res = await api.get('/api/prefill_group', { params: { type } })
   return res.data
 }
+
+// ============================================================================
+// Encryption Utilities
+// ============================================================================
+
+/**
+ * Generate a new encryption key for channel encryption
+ */
+export async function generateEncryptionKey(): Promise<{
+  success: boolean
+  message?: string
+  data?: { key: string }
+}> {
+  const res = await api.post('/api/channel/encryption/generate_key')
+  return res.data
+}

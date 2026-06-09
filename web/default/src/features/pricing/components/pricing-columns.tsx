@@ -107,9 +107,7 @@ export function usePricingColumns(
       cell: ({ row }) => {
         const model = row.original
         const modelIconKey = model.icon || model.vendor_icon
-        const modelIcon = modelIconKey
-          ? getLobeIcon(modelIconKey, 14)
-          : null
+        const modelIcon = modelIconKey ? getLobeIcon(modelIconKey, 14) : null
 
         return (
           <div className='flex min-w-[200px] items-center gap-2'>

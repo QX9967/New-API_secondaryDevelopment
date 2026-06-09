@@ -1,0 +1,12 @@
+{
+  "Check Key Quota": "Check Key Quota",
+  "Enter API key (sk-...)": "Enter API key (sk-...)",
+  "Enter an API key above to check its quota": "Enter an API key above to check its quota",
+  "Failed to fetch quota info": "Failed to fetch quota info",
+  "Key Usage Details": "Key Usage Details",
+  "Please enter an API key": "Please enter an API key",
+  "Log the client IP address for every API request. Useful for auditing and security monitoring.": "记录每次 API 请求的客户端 IP 地址，用于审计和安全监控。",
+  "Total Granted": "Total Granted",
+  "Unlimited quota": "Unlimited quota",
+  "Usage Progress": "Usage Progress"
+}

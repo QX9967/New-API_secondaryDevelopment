@@ -1976,3 +1976,21 @@ func OllamaVersion(c *gin.Context) {
 		},
 	})
 }
+
+func GenerateEncryptionKey(c *gin.Context) {
+	key, err := common.GenerateEncryptionKey()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "Failed to generate encryption key: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"key": key,
+		},
+	})
+}

@@ -195,6 +195,9 @@ export const channelFormSchema = z
     allow_inference_geo: z.boolean().optional(), // OpenAI/Anthropic: inference geography
     allow_speed: z.boolean().optional(), // Anthropic: speed mode control
     claude_beta_query: z.boolean().optional(), // Anthropic: beta query passthrough
+    // Encryption settings (stored in setting JSON)
+    encryption_enabled: z.boolean().optional(),
+    encryption_key: z.string().optional(),
     // Upstream model update settings (stored in settings JSON)
     upstream_model_update_check_enabled: z.boolean().optional(),
     upstream_model_update_auto_sync_enabled: z.boolean().optional(),
@@ -313,6 +316,9 @@ export const CHANNEL_FORM_DEFAULT_VALUES: ChannelFormValues = {
   allow_inference_geo: false,
   allow_speed: false,
   claude_beta_query: false,
+  // Encryption settings
+  encryption_enabled: false,
+  encryption_key: '',
   upstream_model_update_check_enabled: false,
   upstream_model_update_auto_sync_enabled: false,
   upstream_model_update_ignored_models: '',
@@ -336,6 +342,8 @@ export function transformChannelToFormDefaults(
     pass_through_body_enabled: false,
     system_prompt: '',
     system_prompt_override: false,
+    encryption_enabled: false,
+    encryption_key: '',
   }
 
   if (channel.setting) {
@@ -348,6 +356,8 @@ export function transformChannelToFormDefaults(
         pass_through_body_enabled: parsed.pass_through_body_enabled || false,
         system_prompt: parsed.system_prompt || '',
         system_prompt_override: parsed.system_prompt_override || false,
+        encryption_enabled: parsed.encryption_enabled || false,
+        encryption_key: parsed.encryption_key || '',
       }
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -457,6 +467,8 @@ function buildSettingJSON(formData: ChannelFormValues): string {
     pass_through_body_enabled: formData.pass_through_body_enabled || false,
     system_prompt: formData.system_prompt || '',
     system_prompt_override: formData.system_prompt_override || false,
+    encryption_enabled: formData.encryption_enabled || false,
+    encryption_key: formData.encryption_key || '',
   }
   return JSON.stringify(settingObj)
 }

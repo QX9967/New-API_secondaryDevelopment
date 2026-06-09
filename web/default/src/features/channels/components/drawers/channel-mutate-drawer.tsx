@@ -75,6 +75,14 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Sheet,
   SheetClose,
   SheetContent,
@@ -107,6 +115,7 @@ import {
 } from '@/features/auth/secure-verification'
 import {
   fetchModels,
+  generateEncryptionKey,
   getAllModels,
   getChannel,
   getChannelKey,
@@ -301,6 +310,8 @@ export function ChannelMutateDrawer({
   >(null)
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false)
   const [paramOverrideEditorOpen, setParamOverrideEditorOpen] = useState(false)
+  const [encryptionKeyDialogOpen, setEncryptionKeyDialogOpen] = useState(false)
+  const [generatedEncryptionKey, setGeneratedEncryptionKey] = useState('')
 
   const isEditing = Boolean(currentRow)
   const channelId = currentRow?.id ?? null
@@ -1163,6 +1174,88 @@ export function ChannelMutateDrawer({
                             </FormControl>
                             <FormDescription>
                               {t(FIELD_DESCRIPTIONS.OPENAI_ORG)}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+
+                    <FormField
+                      control={form.control}
+                      name='encryption_enabled'
+                      render={({ field }) => (
+                        <FormItem className={sideDrawerSwitchItemClassName()}>
+                          <div className='flex flex-col gap-0.5'>
+                            <FormLabel>{t('Enable Encryption')}</FormLabel>
+                            <FormDescription className='text-xs'>
+                              {t(
+                                'Encrypt request and response bodies for this channel'
+                              )}
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    {form.watch('encryption_enabled') && (
+                      <FormField
+                        control={form.control}
+                        name='encryption_key'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('Encryption Key')}</FormLabel>
+                            <div className='flex gap-2'>
+                              <FormControl>
+                                <Input
+                                  type='password'
+                                  placeholder={t(
+                                    'Base64 encoded 32-byte key'
+                                  )}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <Button
+                                type='button'
+                                variant='outline'
+                                onClick={async () => {
+                                  try {
+                                    const res =
+                                      await generateEncryptionKey()
+                                    if (res.success && res.data?.key) {
+                                      setGeneratedEncryptionKey(res.data.key)
+                                      setEncryptionKeyDialogOpen(true)
+                                      field.onChange(res.data.key)
+                                    } else {
+                                      toast.error(
+                                        res.message ||
+                                          t(
+                                            'Failed to generate encryption key'
+                                          )
+                                      )
+                                    }
+                                  } catch (error) {
+                                    toast.error(
+                                      t(
+                                        'Failed to generate encryption key'
+                                      )
+                                    )
+                                  }
+                                }}
+                              >
+                                {t('Generate')}
+                              </Button>
+                            </div>
+                            <FormDescription>
+                              {t(
+                                'Base64 encoded 32-byte key for AES-256-GCM encryption'
+                              )}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -3471,6 +3564,44 @@ export function ChannelMutateDrawer({
         detailItems={statusCodeRiskDetailItems}
         onConfirm={() => handleStatusCodeRiskAction(true)}
       />
+
+      {/* Encryption Key Display Dialog */}
+      <Dialog
+        open={encryptionKeyDialogOpen}
+        onOpenChange={setEncryptionKeyDialogOpen}
+      >
+        <DialogContent className='sm:max-w-md'>
+          <DialogHeader>
+            <DialogTitle>{t('Encryption Key Generated')}</DialogTitle>
+            <DialogDescription>
+              {t(
+                'Please save this encryption key securely. You will need it to decrypt requests on the backend. This key will not be shown again.'
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className='bg-muted rounded-md p-4'>
+            <code className='text-sm break-all'>{generatedEncryptionKey}</code>
+          </div>
+          <DialogFooter>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => {
+                navigator.clipboard.writeText(generatedEncryptionKey)
+                toast.success(t('Encryption key copied to clipboard'))
+              }}
+            >
+              {t('Copy Key')}
+            </Button>
+            <Button
+              type='button'
+              onClick={() => setEncryptionKeyDialogOpen(false)}
+            >
+              {t('I have saved the key')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

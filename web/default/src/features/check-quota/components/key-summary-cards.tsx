@@ -17,8 +17,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo } from 'react'
-import { useTranslation } from 'react-i18next'
 import { Flame, ShieldCheck, TrendingDown, Key } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { formatQuota } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { TokenQuotaInfo } from '../types'
@@ -57,7 +57,10 @@ export function KeySummaryCards(props: KeySummaryCardsProps) {
   const { t } = useTranslation()
   const { quotaInfo } = props
 
-  const healthLevel = getHealthLevel(quotaInfo.totalAvailable, quotaInfo.totalUsed)
+  const healthLevel = getHealthLevel(
+    quotaInfo.totalAvailable,
+    quotaInfo.totalUsed
+  )
   const healthCfg = HEALTH_CONFIG[healthLevel]
 
   const usagePercentage = useMemo(() => {
@@ -87,9 +90,7 @@ export function KeySummaryCards(props: KeySummaryCardsProps) {
               <h3 className='text-base font-semibold'>
                 {t('Key Usage Details')}
               </h3>
-              <p className='text-muted-foreground text-sm'>
-                {quotaInfo.name}
-              </p>
+              <p className='text-muted-foreground text-sm'>{quotaInfo.name}</p>
             </div>
             <div className='flex items-center gap-2'>
               <Key className='text-muted-foreground size-4' />

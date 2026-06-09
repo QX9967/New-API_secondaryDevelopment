@@ -269,9 +269,7 @@ function ModelHeader(props: { model: PricingModel }) {
   const { t } = useTranslation()
   const model = props.model
   const modelIconKey = model.icon || model.vendor_icon
-  const modelIcon = modelIconKey
-    ? getLobeIcon(modelIconKey, 20)
-    : null
+  const modelIcon = modelIconKey ? getLobeIcon(modelIconKey, 20) : null
   const description = model.description || model.vendor_description || null
   const tags = parseTags(model.tags)
   const isSpecialExpression =

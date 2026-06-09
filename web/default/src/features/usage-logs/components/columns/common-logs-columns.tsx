@@ -55,8 +55,8 @@ import {
   isPerCallBilling,
 } from '../../lib/utils'
 import type { LogOtherData } from '../../types'
-import { DetailsDialog } from '../dialogs/details-dialog'
 import { ContentDetailDialog } from '../dialogs/content-detail-dialog'
+import { DetailsDialog } from '../dialogs/details-dialog'
 import { ModelBadge } from '../model-badge'
 import { useUsageLogsContext } from '../usage-logs-provider'
 
@@ -479,17 +479,23 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
       const apiKey = log.key
       const tokenName = log.token_name
       const tokenId = log.token_id
-      
+
       // If no key and no token name, check if it's a playground/session request
       if (!apiKey && !tokenName && tokenId !== 0) return null
 
       // If no key available, show token_name as primary display
       const hasKey = apiKey && apiKey.length > 0
       const isPlayground = tokenId === 0 && !hasKey
-      const displayKey = hasKey ? (sensitiveVisible ? `sk-${apiKey}` : '••••') : null
-      const displayName = isPlayground 
-        ? (tokenName || t('Playground'))
-        : (sensitiveVisible ? tokenName : '••••')
+      const displayKey = hasKey
+        ? sensitiveVisible
+          ? `sk-${apiKey}`
+          : '••••'
+        : null
+      const displayName = isPlayground
+        ? tokenName || t('Playground')
+        : sensitiveVisible
+          ? tokenName
+          : '••••'
       const other = parseLogOther(log.other)
       let group = log.group
       if (!group) group = other?.group || ''
@@ -497,7 +503,9 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
       const metaParts: string[] = []
       const groupRatioText = getGroupRatioText(other)
       if (group) {
-        metaParts.push(`${t('Group')}${': '}${sensitiveVisible ? group : '••••'}`)
+        metaParts.push(
+          `${t('Group')}${': '}${sensitiveVisible ? group : '••••'}`
+        )
       }
       if (groupRatioText) metaParts.push(groupRatioText)
 
@@ -537,7 +545,9 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
           </TooltipProvider>
           {tokenName && (hasKey || isPlayground) && (
             <span className='text-muted-foreground/60 truncate [font-family:var(--font-body)] !text-xs'>
-              {t('Name')}{': '}{isPlayground ? tokenName : (sensitiveVisible ? tokenName : '••••')}
+              {t('Name')}
+              {': '}
+              {isPlayground ? tokenName : sensitiveVisible ? tokenName : '••••'}
             </span>
           )}
           {metaParts.length > 0 && (
@@ -565,9 +575,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
 
         const ip = log.ip
         if (!ip) {
-          return (
-            <span className='text-muted-foreground/40 text-xs'>—</span>
-          )
+          return <span className='text-muted-foreground/40 text-xs'>—</span>
         }
 
         return (
@@ -821,7 +829,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
 
         return (
           <div className='flex flex-col gap-0.5'>
-            <span className='border-border/80 bg-muted/60 inline-flex h-6 w-fit items-center rounded-md border px-2 text-sm leading-none [font-family:var(--font-body)] font-semibold tabular-nums'>
+            <span className='border-border/80 bg-muted/60 inline-flex h-6 w-fit items-center rounded-md border px-2 [font-family:var(--font-body)] text-sm leading-none font-semibold tabular-nums'>
               {quotaDisplay.prefix && (
                 <span className='mr-1'>{quotaDisplay.prefix}</span>
               )}
@@ -846,18 +854,17 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
         const content = log.request_body || ''
 
         if (!content) {
-          return (
-            <span className='text-muted-foreground/40 text-xs'>—</span>
-          )
+          return <span className='text-muted-foreground/40 text-xs'>—</span>
         }
 
-        const preview = content.length > 30 ? content.substring(0, 30) + '...' : content
+        const preview =
+          content.length > 30 ? content.substring(0, 30) + '...' : content
 
         return (
           <>
             <button
               type='button'
-              className='group max-w-[200px] truncate text-left text-xs text-muted-foreground hover:underline'
+              className='group text-muted-foreground max-w-[200px] truncate text-left text-xs hover:underline'
               onClick={() => setDialogOpen(true)}
               title={t('Click to view request content')}
             >
@@ -889,18 +896,17 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
         const content = log.response_body || ''
 
         if (!content) {
-          return (
-            <span className='text-muted-foreground/40 text-xs'>—</span>
-          )
+          return <span className='text-muted-foreground/40 text-xs'>—</span>
         }
 
-        const preview = content.length > 30 ? content.substring(0, 30) + '...' : content
+        const preview =
+          content.length > 30 ? content.substring(0, 30) + '...' : content
 
         return (
           <>
             <button
               type='button'
-              className='group max-w-[200px] truncate text-left text-xs text-muted-foreground hover:underline'
+              className='group text-muted-foreground max-w-[200px] truncate text-left text-xs hover:underline'
               onClick={() => setDialogOpen(true)}
               title={t('Click to view response content')}
             >

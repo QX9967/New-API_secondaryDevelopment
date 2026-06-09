@@ -71,6 +71,10 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	//group := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
 	//originalModel := common.GetContextKeyString(c, constant.ContextKeyOriginalModel)
 
+	logger.LogInfo(c, fmt.Sprintf("[Relay入口] 收到请求, 格式: %v, 路径: %s, 方法: %s", 
+		relayFormat, c.Request.URL.Path, c.Request.Method))
+	logger.LogInfo(c, fmt.Sprintf("[Relay入口] RequestID: %s", requestId))
+
 	var (
 		newAPIError *types.NewAPIError
 		ws          *websocket.Conn
@@ -122,6 +126,8 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		newAPIError = types.NewError(err, types.ErrorCodeGenRelayInfoFailed)
 		return
 	}
+
+	logger.LogInfo(c, fmt.Sprintf("[Relay入口] 模型: %s, 路径: %s", relayInfo.OriginModelName, c.Request.URL.Path))
 
 	// Capture request body for detailed logging if enabled
 	if common.LogDetailEnabled {

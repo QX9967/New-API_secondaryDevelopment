@@ -310,7 +310,14 @@ func DoApiRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBody
 	if err != nil {
 		return nil, fmt.Errorf("get request url failed: %w", err)
 	}
-	logger.LogDebug(c, "fullRequestURL: %s", fullRequestURL)
+
+	// 添加详细的调试日志
+	logger.LogInfo(c, fmt.Sprintf("[转发] 渠道ID: %d, 类型: %d, 模型: %s", 
+		info.ChannelId, info.ChannelType, info.UpstreamModelName))
+	logger.LogInfo(c, fmt.Sprintf("[转发] 请求地址: %s", fullRequestURL))
+	logger.LogInfo(c, fmt.Sprintf("[转发] 加密状态: 启用=%v, 密钥长度=%d", 
+		info.ChannelSetting.EncryptionEnabled, len(info.ChannelSetting.EncryptionKey)))
+	logger.LogInfo(c, fmt.Sprintf("[转发] 流式请求: %v", info.IsStream))
 
 	// 检查是否启用加密
 	var encryptedRequestBody io.Reader
@@ -321,6 +328,8 @@ func DoApiRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBody
 			return nil, fmt.Errorf("read request body failed: %w", err)
 		}
 
+		logger.LogInfo(c, fmt.Sprintf("[转发] 原始请求体长度: %d 字节", len(bodyBytes)))
+
 		// 加密请求体
 		encryptedBody, err := EncryptRequestBody(info.ChannelSetting.EncryptionKey, bodyBytes)
 		if err != nil {
@@ -328,9 +337,10 @@ func DoApiRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBody
 		}
 
 		encryptedRequestBody = bytes.NewReader(encryptedBody)
-		logger.LogDebug(c, "request body encrypted")
+		logger.LogInfo(c, fmt.Sprintf("[转发] 请求体已加密, 长度: %d 字节", len(encryptedBody)))
 	} else {
 		encryptedRequestBody = requestBody
+		logger.LogInfo(c, "[转发] 加密未启用, 发送明文")
 	}
 
 	req, err := http.NewRequest(c.Request.Method, fullRequestURL, encryptedRequestBody)
@@ -354,12 +364,16 @@ func DoApiRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBody
 	// 如果启用加密，添加加密标记头
 	if info.ChannelSetting.EncryptionEnabled {
 		req.Header.Set("X-Encryption-Enabled", "true")
+		logger.LogInfo(c, "[转发] 已添加加密标记头 X-Encryption-Enabled: true")
 	}
 
+	logger.LogInfo(c, "[转发] 正在发送请求到上游服务器...")
 	resp, err := doRequest(c, req, info)
 	if err != nil {
+		logger.LogError(c, fmt.Sprintf("[转发] 请求失败: %v", err))
 		return nil, fmt.Errorf("do request failed: %w", err)
 	}
+	logger.LogInfo(c, fmt.Sprintf("[转发] 收到响应, 状态码: %d", resp.StatusCode))
 	return resp, nil
 }
 

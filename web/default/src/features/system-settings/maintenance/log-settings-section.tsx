@@ -113,7 +113,10 @@ export function LogSettingsSection({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   useEffect(() => {
-    form.reset({ LogConsumeEnabled: defaultEnabled, RecordIpLogEnabled: defaultIpLogEnabled })
+    form.reset({
+      LogConsumeEnabled: defaultEnabled,
+      RecordIpLogEnabled: defaultIpLogEnabled,
+    })
   }, [defaultEnabled, defaultIpLogEnabled, form])
 
   const purgeTimestamp = useMemo(() => {
@@ -129,16 +132,20 @@ export function LogSettingsSection({
   const onSubmit = async (values: LogSettingsFormValues) => {
     const promises: Promise<unknown>[] = []
     if (values.LogConsumeEnabled !== defaultEnabled) {
-      promises.push(updateOption.mutateAsync({
-        key: 'LogConsumeEnabled',
-        value: values.LogConsumeEnabled,
-      }))
+      promises.push(
+        updateOption.mutateAsync({
+          key: 'LogConsumeEnabled',
+          value: values.LogConsumeEnabled,
+        })
+      )
     }
     if (values.RecordIpLogEnabled !== defaultIpLogEnabled) {
-      promises.push(updateOption.mutateAsync({
-        key: 'RecordIpLogEnabled',
-        value: values.RecordIpLogEnabled,
-      }))
+      promises.push(
+        updateOption.mutateAsync({
+          key: 'RecordIpLogEnabled',
+          value: values.RecordIpLogEnabled,
+        })
+      )
     }
     if (promises.length > 0) {
       await Promise.all(promises)
