@@ -325,9 +325,13 @@ export function DifficultyStrategyDialog({
                 >
                   <FormControl>
                     <SelectTrigger className='w-full'>
-                      <SelectValue
-                        placeholder={t('Select classifier type')}
-                      />
+                      <SelectValue>
+                        {field.value === 'channel'
+                          ? t('Channel (use existing channel)')
+                          : field.value === 'independent'
+                            ? t('Independent (own API key)')
+                            : t('Select classifier type')}
+                      </SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
