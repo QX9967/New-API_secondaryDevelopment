@@ -94,9 +94,21 @@ func buildClassifyMessages(systemPrompt string, userMessages []map[string]string
 }
 
 func classifyViaChannel(channelId int, modelName string, messages []map[string]string, timeout int) (*ClassifierResult, error) {
-	channel, err := model.CacheGetChannel(channelId)
-	if err != nil || channel == nil {
-		return nil, fmt.Errorf("classifier channel not found: %d", channelId)
+	var channel *model.Channel
+	var err error
+
+	if channelId > 0 {
+		channel, err = model.CacheGetChannel(channelId)
+		if err != nil || channel == nil {
+			return nil, fmt.Errorf("classifier channel not found: %d", channelId)
+		}
+	} else if modelName != "" {
+		channel, err = model.GetRandomSatisfiedChannel("default", modelName, 0)
+		if err != nil || channel == nil {
+			return nil, fmt.Errorf("no channel found for model: %s", modelName)
+		}
+	} else {
+		return nil, fmt.Errorf("either channel_id or model name is required")
 	}
 
 	key := channel.Key
@@ -105,7 +117,12 @@ func classifyViaChannel(channelId int, modelName string, messages []map[string]s
 		baseUrl = *channel.BaseURL
 	}
 
-	return classifyViaIndependent(key, baseUrl, modelName, messages, timeout)
+	actualModel := modelName
+	if actualModel == "" {
+		actualModel = modelName
+	}
+
+	return classifyViaIndependent(key, baseUrl, actualModel, messages, timeout)
 }
 
 func classifyViaIndependent(apiKey, baseUrl, modelName string, messages []map[string]string, timeout int) (*ClassifierResult, error) {

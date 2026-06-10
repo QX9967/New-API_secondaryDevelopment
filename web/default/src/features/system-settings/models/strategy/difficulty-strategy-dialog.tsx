@@ -357,20 +357,33 @@ export function DifficultyStrategyDialog({
           {classifierType === 'channel' && (
             <FormField
               control={form.control}
-              name='classifier_channel_id'
+              name='classifier_model'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Channel ID')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type='number'
-                      min={1}
-                      placeholder={t('Enter channel ID')}
-                      {...safeNumberFieldProps(field)}
-                    />
-                  </FormControl>
+                  <FormLabel>{t('Classifier Model')}</FormLabel>
+                  <Select
+                    value={field.value ?? ''}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger className='w-full'>
+                        <SelectValue
+                          placeholder={t('Select a model for classification')}
+                        />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectGroup>
+                        {modelOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                   <FormDescription>
-                    {t('The channel ID to use for classification requests.')}
+                    {t('Choose a cheap model to judge request difficulty.')}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
