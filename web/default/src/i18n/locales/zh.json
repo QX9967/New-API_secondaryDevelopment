@@ -2336,7 +2336,7 @@
     "MySQL is production ready. Ensure automated backups and a dedicated user with the minimal required privileges are configured.": "MySQL 已准备好投入生产环境。请确保配置了自动备份以及具有最低所需权限的专用用户。",
     "N/A": "不适用",
     "NEW": "新",
-    "Name": "姓名",
+    "Name": "名称",
     "Name *": "名称 *",
     "Name Rule": "名称规则",
     "Name Suffix": "名称后缀",
