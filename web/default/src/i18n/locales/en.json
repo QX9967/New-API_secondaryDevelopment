@@ -3539,6 +3539,8 @@
     "Signing you in with {{provider}}": "Signing you in with {{provider}}",
     "SiliconFlow": "SiliconFlow",
     "Simple": "Simple",
+"Medium": "Medium",
+"Hard": "Hard",
     "Simple mode only returns message; status code and error type use system defaults.": "Simple mode only returns message; status code and error type use system defaults.",
     "Simple mode: prune objects by type, e.g. redacted_thinking.": "Simple mode: prune objects by type, e.g. redacted_thinking.",
     "Single Key": "Single Key",
