@@ -545,7 +545,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
           </TooltipProvider>
           {tokenName && (hasKey || isPlayground) && (
             <span className='text-muted-foreground/60 truncate [font-family:var(--font-body)] !text-xs'>
-              {t('Name')}
+              {t('True Name')}
               {': '}
               {isPlayground ? tokenName : sensitiveVisible ? tokenName : '••••'}
             </span>
