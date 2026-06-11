@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Clock, Plus, Trash2, Zap } from 'lucide-react'
+import { Clock, Edit, Plus, Trash2, Zap } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -38,6 +38,7 @@ import type { Strategy } from './types'
 
 function StrategyCard(props: {
   strategy: Strategy
+  onEdit: (strategy: Strategy) => void
   onDelete: (id: number) => void
   onToggle: (strategy: Strategy) => void
 }) {
@@ -70,6 +71,13 @@ function StrategyCard(props: {
           <Button
             variant='ghost'
             size='icon-sm'
+            onClick={() => props.onEdit(strategy)}
+          >
+            <Edit />
+          </Button>
+          <Button
+            variant='ghost'
+            size='icon-sm'
             onClick={() => props.onDelete(strategy.id)}
           >
             <Trash2 />
@@ -90,6 +98,7 @@ export function StrategySection() {
   const queryClient = useQueryClient()
   const [difficultyDialogOpen, setDifficultyDialogOpen] = useState(false)
   const [timeDialogOpen, setTimeDialogOpen] = useState(false)
+  const [editData, setEditData] = useState<Strategy | null>(null)
 
   const strategiesQuery = useQuery({
     queryKey: ['strategies'],
@@ -135,6 +144,25 @@ export function StrategySection() {
     })
   }
 
+  const handleEdit = (strategy: Strategy) => {
+    setEditData(strategy)
+    if (strategy.type === 'difficulty') {
+      setDifficultyDialogOpen(true)
+    } else {
+      setTimeDialogOpen(true)
+    }
+  }
+
+  const closeDifficultyDialog = (open: boolean) => {
+    setDifficultyDialogOpen(open)
+    if (!open) setEditData(null)
+  }
+
+  const closeTimeDialog = (open: boolean) => {
+    setTimeDialogOpen(open)
+    if (!open) setEditData(null)
+  }
+
   return (
     <>
       <SettingsSection title={t('Difficulty Strategy')}>
@@ -142,7 +170,7 @@ export function StrategySection() {
           <p className='text-muted-foreground text-sm'>
             {t('Classify request difficulty and route to appropriate models')}
           </p>
-          <Button size='sm' onClick={() => setDifficultyDialogOpen(true)}>
+          <Button size='sm' onClick={() => { setEditData(null); setDifficultyDialogOpen(true) }}>
             <Plus className='mr-1 size-3' />
             {t('Add Difficulty Strategy')}
           </Button>
@@ -157,6 +185,7 @@ export function StrategySection() {
               <StrategyCard
                 key={strategy.id}
                 strategy={strategy}
+                onEdit={handleEdit}
                 onDelete={handleDelete}
                 onToggle={handleToggle}
               />
@@ -170,7 +199,7 @@ export function StrategySection() {
           <p className='text-muted-foreground text-sm'>
             {t('Adjust routing based on time schedules')}
           </p>
-          <Button size='sm' onClick={() => setTimeDialogOpen(true)}>
+          <Button size='sm' onClick={() => { setEditData(null); setTimeDialogOpen(true) }}>
             <Plus className='mr-1 size-3' />
             {t('Add Time Strategy')}
           </Button>
@@ -185,6 +214,7 @@ export function StrategySection() {
               <StrategyCard
                 key={strategy.id}
                 strategy={strategy}
+                onEdit={handleEdit}
                 onDelete={handleDelete}
                 onToggle={handleToggle}
               />
@@ -195,14 +225,16 @@ export function StrategySection() {
 
       <DifficultyStrategyDialog
         open={difficultyDialogOpen}
-        onOpenChange={setDifficultyDialogOpen}
+        onOpenChange={closeDifficultyDialog}
+        editData={editData}
         onSuccess={() =>
           queryClient.invalidateQueries({ queryKey: ['strategies'] })
         }
       />
       <TimeStrategyDialog
         open={timeDialogOpen}
-        onOpenChange={setTimeDialogOpen}
+        onOpenChange={closeTimeDialog}
+        editData={editData}
         onSuccess={() =>
           queryClient.invalidateQueries({ queryKey: ['strategies'] })
         }

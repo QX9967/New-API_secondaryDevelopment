@@ -131,12 +131,27 @@ func Distribute() func(c *gin.Context) {
 				}
 
 				if channel == nil {
-					channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(&service.RetryParam{
-						Ctx:        c,
-						ModelName:  modelRequest.Model,
-						TokenGroup: usingGroup,
-						Retry:      common.GetPointer(0),
-					})
+					if strategyModels, ok := common.GetContextKeyType[[]string](c, constant.ContextKeyStrategyModels); ok && len(strategyModels) > 0 {
+						for _, strategyModel := range strategyModels {
+							channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(&service.RetryParam{
+								Ctx:        c,
+								ModelName:  strategyModel,
+								TokenGroup: usingGroup,
+								Retry:      common.GetPointer(0),
+							})
+							if err == nil && channel != nil {
+								break
+							}
+						}
+					}
+					if channel == nil {
+						channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(&service.RetryParam{
+							Ctx:        c,
+							ModelName:  modelRequest.Model,
+							TokenGroup: usingGroup,
+							Retry:      common.GetPointer(0),
+						})
+					}
 					if err != nil {
 						showGroup := usingGroup
 						if usingGroup == "auto" {
@@ -159,7 +174,9 @@ func Distribute() func(c *gin.Context) {
 			}
 		}
 		common.SetContextKey(c, constant.ContextKeyRequestStartTime, time.Now())
-		SetupContextForSelectedChannel(c, channel, modelRequest.Model)
+		if channel != nil {
+			SetupContextForSelectedChannel(c, channel, modelRequest.Model)
+		}
 		c.Next()
 		if channel != nil && c.Writer != nil && c.Writer.Status() < http.StatusBadRequest {
 			service.RecordChannelAffinity(c, channel.Id)
