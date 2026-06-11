@@ -47,7 +47,7 @@ import {
 } from '@/components/ui/select'
 import { MultiSelect, type Option } from '@/components/multi-select'
 import { Dialog } from '@/components/dialog'
-import { getAllModels } from '@/features/channels/api'
+import { getEnabledModels } from '@/features/channels/api'
 import { safeNumberFieldProps } from '../../utils/numeric-field'
 import { createStrategy, updateStrategy } from './api'
 import type { Strategy, DifficultyModels } from './types'
@@ -119,13 +119,13 @@ export function DifficultyStrategyDialog({
   const classifierType = form.watch('classifier_type')
 
   const { data: modelsData, isLoading: isLoadingModels } = useQuery({
-    queryKey: ['all-models'],
-    queryFn: getAllModels,
+    queryKey: ['enabled-models'],
+    queryFn: getEnabledModels,
     enabled: open,
   })
 
   const modelOptions: Option[] =
-    modelsData?.data?.map((m) => ({ value: m.id, label: m.id })) ?? []
+    modelsData?.data?.map((m) => ({ value: m, label: m })) ?? []
 
   useEffect(() => {
     if (open) {
