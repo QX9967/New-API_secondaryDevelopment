@@ -116,6 +116,8 @@ var LogConsumeEnabled = true
 var LogDetailEnabled = true
 var LogDetailMaxSize = 10000
 var RecordIpLogEnabled = true
+var IntentClassificationEnabled = false
+var IntentSampleRate = 100
 
 // TruncateString truncates s to maxLen characters. If truncated, appends "...".
 func TruncateString(s string, maxLen int) string {

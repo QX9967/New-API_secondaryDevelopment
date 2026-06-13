@@ -311,6 +311,8 @@ func updateOptionMap(key string, value string) (err error) {
 			common.LogDetailEnabled = boolValue
 		case "RecordIpLogEnabled":
 			common.RecordIpLogEnabled = boolValue
+		case "IntentClassificationEnabled":
+			common.IntentClassificationEnabled = boolValue
 		case "DisplayInCurrencyEnabled":
 			// 兼容旧字段：同步到新配置 general_setting.quota_display_type（运行时生效）
 			// true -> USD, false -> TOKENS
@@ -565,6 +567,8 @@ func updateOptionMap(key string, value string) (err error) {
 		err = operation_setting.AutomaticRetryStatusCodesFromString(value)
 	case "StreamCacheQueueLength":
 		setting.StreamCacheQueueLength, _ = strconv.Atoi(value)
+	case "IntentSampleRate":
+		common.IntentSampleRate, _ = strconv.Atoi(value)
 	case "PayMethods":
 		err = operation_setting.UpdatePayMethodsByJsonString(value)
 	case "WaffoPayMethods":
