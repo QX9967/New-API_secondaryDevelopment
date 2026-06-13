@@ -21,6 +21,7 @@ type Strategy struct {
 	ClassifierPrompt    string `json:"classifier_prompt" gorm:"type:text"`
 	ClassifierTimeout   int    `json:"classifier_timeout" gorm:"default:10000"`
 	DifficultyModels    string `json:"difficulty_models" gorm:"type:text"`
+	IntentLabels        string `json:"intent_labels" gorm:"type:text"`
 
 	CronExpr    string `json:"cron_expr" gorm:"size:128"`
 	Timezone    string `json:"timezone" gorm:"size:64"`
@@ -112,6 +113,7 @@ func (s *Strategy) Update() error {
 		"classifier_prompt":    s.ClassifierPrompt,
 		"classifier_timeout":   s.ClassifierTimeout,
 		"difficulty_models":    s.DifficultyModels,
+		"intent_labels":        s.IntentLabels,
 		"cron_expr":            s.CronExpr,
 		"timezone":             s.Timezone,
 		"time_actions":         s.TimeActions,

@@ -53,8 +53,12 @@ type Log struct {
 	Ip                string `json:"ip" gorm:"index;default:''"`
 	RequestId         string `json:"request_id,omitempty" gorm:"type:varchar(64);index:idx_logs_request_id;default:''"`
 	UpstreamRequestId string `json:"upstream_request_id,omitempty" gorm:"type:varchar(128);index:idx_logs_upstream_request_id;default:''"`
-	DifficultyLevel   string `json:"difficulty_level" gorm:"size:32;default:''"`
-	Other             string `json:"other"`
+	DifficultyLevel   string  `json:"difficulty_level" gorm:"size:32;default:''"`
+	IntentCategory    string  `json:"intent_category" gorm:"size:32;index;default:''"`
+	IntentSubCategory string  `json:"intent_sub_category" gorm:"size:64;default:''"`
+	IntentConfidence  float64 `json:"intent_confidence" gorm:"default:0"`
+	IntentReason      string  `json:"intent_reason" gorm:"size:512;default:''"`
+	Other             string  `json:"other"`
 	RequestBody       string `json:"request_body,omitempty" gorm:"type:text"`
 	ResponseBody      string `json:"response_body,omitempty" gorm:"type:text"`
 }
@@ -616,6 +620,20 @@ func SumUsedToken(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	}
 	tx.Where("type = ?", LogTypeConsume).Scan(&token)
 	return token
+}
+
+func UpdateLogIntent(requestId string, category, subCategory string, confidence float64, reason string) error {
+	if requestId == "" {
+		return nil
+	}
+	return LOG_DB.Model(&Log{}).
+		Where("request_id = ?", requestId).
+		Updates(map[string]interface{}{
+			"intent_category":     category,
+			"intent_sub_category": subCategory,
+			"intent_confidence":   confidence,
+			"intent_reason":       reason,
+		}).Error
 }
 
 func DeleteOldLog(ctx context.Context, targetTimestamp int64, limit int) (int64, error) {
