@@ -35,8 +35,8 @@ export type DifficultyModels = z.infer<typeof difficultyModelsSchema>
 export const timeActionsSchema = z.object({
   enable_models: z.array(z.string()).optional(),
   disable_models: z.array(z.string()).optional(),
-  priority_adjust: z.record(z.number()).optional(),
-  weight_adjust: z.record(z.number()).optional(),
+  priority_adjust: z.record(z.string(), z.number()).optional(),
+  weight_adjust: z.record(z.string(), z.number()).optional(),
   use_models: z.array(z.string()).optional(),
 })
 

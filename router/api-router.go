@@ -269,6 +269,17 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.POST("/upstream_updates/detect_all", controller.DetectAllChannelUpstreamModelUpdates)
 			channelRoute.POST("/encryption/generate_key", controller.GenerateEncryptionKey)
 		}
+		strategyRoute := apiRouter.Group("/strategy")
+		strategyRoute.Use(middleware.AdminAuth())
+		{
+			strategyRoute.GET("/", controller.GetAllStrategies)
+			strategyRoute.GET("/:id", controller.GetStrategy)
+			strategyRoute.POST("/", controller.CreateStrategy)
+			strategyRoute.PUT("/", controller.UpdateStrategy)
+			strategyRoute.DELETE("/:id", controller.DeleteStrategy)
+			strategyRoute.POST("/test", controller.TestClassifier)
+			strategyRoute.GET("/logs", controller.GetStrategyLogs)
+		}
 		tokenRoute := apiRouter.Group("/token")
 		tokenRoute.Use(middleware.UserAuth())
 		{

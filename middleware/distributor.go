@@ -140,6 +140,7 @@ func Distribute() func(c *gin.Context) {
 								Retry:      common.GetPointer(0),
 							})
 							if err == nil && channel != nil {
+								modelRequest.Model = strategyModel
 								break
 							}
 						}

@@ -208,6 +208,9 @@ func InitDB() (err error) {
 		}
 		common.SysLog("database migration started")
 		err = migrateDB()
+		if err == nil {
+			InitStrategyCache()
+		}
 		return err
 	} else {
 		common.FatalLog(err)

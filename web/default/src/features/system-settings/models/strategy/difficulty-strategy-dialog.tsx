@@ -139,7 +139,7 @@ export function DifficultyStrategyDialog({
           classifier_api_key: editData.classifier_api_key ?? '',
           classifier_base_url: editData.classifier_base_url ?? '',
           classifier_prompt: editData.classifier_prompt ?? '',
-          classifier_timeout: editData.classifier_timeout ?? 3000,
+          classifier_timeout: editData.classifier_timeout ?? 10000,
           description: editData.description ?? '',
         })
         try {
@@ -160,7 +160,7 @@ export function DifficultyStrategyDialog({
           classifier_api_key: '',
           classifier_base_url: '',
           classifier_prompt: '',
-          classifier_timeout: 3000,
+      classifier_timeout: 10000,
           description: '',
         })
         setDifficultyModels(DEFAULT_DIFFICULTY_MODELS)
@@ -182,15 +182,13 @@ export function DifficultyStrategyDialog({
       const payload: Partial<Strategy> = {
         ...values,
         type: 'difficulty',
+        enabled: editData?.enabled ?? true,
         difficulty_models: JSON.stringify(difficultyModels),
         classifier_channel_id:
           values.classifier_type === 'channel'
             ? values.classifier_channel_id
             : undefined,
-        classifier_model:
-          values.classifier_type === 'independent'
-            ? values.classifier_model
-            : undefined,
+        classifier_model: values.classifier_model || undefined,
         classifier_api_key:
           values.classifier_type === 'independent'
             ? values.classifier_api_key

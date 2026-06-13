@@ -139,7 +139,7 @@ export function StrategySection() {
 
   const handleToggle = (strategy: Strategy) => {
     toggleMutation.mutate({
-      id: strategy.id,
+      ...strategy,
       enabled: !strategy.enabled,
     })
   }

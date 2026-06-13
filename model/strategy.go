@@ -19,7 +19,7 @@ type Strategy struct {
 	ClassifierApiKey    string `json:"classifier_api_key" gorm:"size:512"`
 	ClassifierBaseUrl   string `json:"classifier_base_url" gorm:"size:512"`
 	ClassifierPrompt    string `json:"classifier_prompt" gorm:"type:text"`
-	ClassifierTimeout   int    `json:"classifier_timeout" gorm:"default:3000"`
+	ClassifierTimeout   int    `json:"classifier_timeout" gorm:"default:10000"`
 	DifficultyModels    string `json:"difficulty_models" gorm:"type:text"`
 
 	CronExpr    string `json:"cron_expr" gorm:"size:128"`
@@ -98,7 +98,27 @@ func (s *Strategy) Insert() error {
 }
 
 func (s *Strategy) Update() error {
-	return DB.Save(s).Error
+	s.UpdatedAt = common.GetTimestamp()
+	updates := map[string]interface{}{
+		"name":                 s.Name,
+		"type":                 s.Type,
+		"enabled":              s.Enabled,
+		"priority":             s.Priority,
+		"classifier_type":      s.ClassifierType,
+		"classifier_channel_id": s.ClassifierChannelId,
+		"classifier_model":     s.ClassifierModel,
+		"classifier_api_key":   s.ClassifierApiKey,
+		"classifier_base_url":  s.ClassifierBaseUrl,
+		"classifier_prompt":    s.ClassifierPrompt,
+		"classifier_timeout":   s.ClassifierTimeout,
+		"difficulty_models":    s.DifficultyModels,
+		"cron_expr":            s.CronExpr,
+		"timezone":             s.Timezone,
+		"time_actions":         s.TimeActions,
+		"description":          s.Description,
+		"updated_at":           s.UpdatedAt,
+	}
+	return DB.Model(&Strategy{}).Where("id = ?", s.Id).Updates(updates).Error
 }
 
 func (s *Strategy) Delete() error {

@@ -26,7 +26,7 @@ type ClassifierResult struct {
 	Reason string `json:"reason"`
 }
 
-func ClassifyDifficulty(strategyId int, classifierType string, channelId int, modelName, apiKey, baseUrl, customPrompt string, timeout int, userMessages []map[string]string) (*ClassifierResult, error) {
+func ClassifyDifficulty(strategyId int, classifierType string, channelId int, modelName, apiKey, baseUrl, customPrompt string, timeout int, group string, userMessages []map[string]string) (*ClassifierResult, error) {
 	start := time.Now()
 
 	prompt := defaultClassifierPrompt
@@ -39,8 +39,12 @@ func ClassifyDifficulty(strategyId int, classifierType string, channelId int, mo
 	var result *ClassifierResult
 	var classifyErr error
 
-	if classifierType == "channel" && channelId > 0 {
-		result, classifyErr = classifyViaChannel(channelId, modelName, classifyMessages, timeout)
+	if classifierType == "channel" {
+		if channelId > 0 || modelName != "" {
+			result, classifyErr = classifyViaChannel(channelId, modelName, classifyMessages, timeout, group)
+		} else {
+			return nil, fmt.Errorf("channel type requires channelId or modelName")
+		}
 	} else if classifierType == "independent" && apiKey != "" {
 		result, classifyErr = classifyViaIndependent(apiKey, baseUrl, modelName, classifyMessages, timeout)
 	} else {
@@ -93,7 +97,7 @@ func buildClassifyMessages(systemPrompt string, userMessages []map[string]string
 	return messages
 }
 
-func classifyViaChannel(channelId int, modelName string, messages []map[string]string, timeout int) (*ClassifierResult, error) {
+func classifyViaChannel(channelId int, modelName string, messages []map[string]string, timeout int, group string) (*ClassifierResult, error) {
 	var channel *model.Channel
 	var err error
 
@@ -103,9 +107,12 @@ func classifyViaChannel(channelId int, modelName string, messages []map[string]s
 			return nil, fmt.Errorf("classifier channel not found: %d", channelId)
 		}
 	} else if modelName != "" {
-		channel, err = model.GetRandomSatisfiedChannel("default", modelName, 0)
+		if group == "" {
+			group = "default"
+		}
+		channel, err = model.GetRandomSatisfiedChannel(group, modelName, 0)
 		if err != nil || channel == nil {
-			return nil, fmt.Errorf("no channel found for model: %s", modelName)
+			return nil, fmt.Errorf("no channel found for group %s and model: %s", group, modelName)
 		}
 	} else {
 		return nil, fmt.Errorf("either channel_id or model name is required")
@@ -119,7 +126,12 @@ func classifyViaChannel(channelId int, modelName string, messages []map[string]s
 
 	actualModel := modelName
 	if actualModel == "" {
-		actualModel = modelName
+		models := channel.GetModels()
+		if len(models) > 0 {
+			actualModel = models[0]
+		} else {
+			return nil, fmt.Errorf("channel has no models configured")
+		}
 	}
 
 	return classifyViaIndependent(key, baseUrl, actualModel, messages, timeout)

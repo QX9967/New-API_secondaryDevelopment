@@ -37,6 +37,10 @@ func StrategyMiddleware() func(c *gin.Context) {
 
 		var strategyModels []string
 		var difficultyLevel string
+		usingGroup := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
+		if usingGroup == "" {
+			usingGroup = common.GetContextKeyString(c, constant.ContextKeyTokenGroup)
+		}
 
 		for _, strategy := range strategies {
 			if !strategy.Enabled {
@@ -48,7 +52,7 @@ func StrategyMiddleware() func(c *gin.Context) {
 				if strategyModels != nil {
 					continue
 				}
-				level, models, err := evaluateDifficultyStrategy(c, &strategy)
+				level, models, err := evaluateDifficultyStrategy(c, &strategy, usingGroup)
 				if err != nil {
 					continue
 				}
@@ -77,7 +81,7 @@ func StrategyMiddleware() func(c *gin.Context) {
 	}
 }
 
-func evaluateDifficultyStrategy(c *gin.Context, strategy *model.Strategy) (string, []string, error) {
+func evaluateDifficultyStrategy(c *gin.Context, strategy *model.Strategy, group string) (string, []string, error) {
 	messages, err := extractUserMessages(c)
 	if err != nil || len(messages) == 0 {
 		return "", nil, fmt.Errorf("no user messages found")
@@ -98,6 +102,7 @@ func evaluateDifficultyStrategy(c *gin.Context, strategy *model.Strategy) (strin
 		strategy.ClassifierBaseUrl,
 		strategy.ClassifierPrompt,
 		strategy.ClassifierTimeout,
+		group,
 		messages,
 	)
 	if err != nil {
