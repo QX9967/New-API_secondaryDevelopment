@@ -76,4 +76,5 @@ const (
 	ContextKeyStrategyModels          ContextKey = "strategy_models"
 	ContextKeyStrategyDifficultyLevel ContextKey = "strategy_difficulty_level"
 	ContextKeyStrategyTimeMasked      ContextKey = "strategy_time_masked"
+	ContextKeyIntentStrategy          ContextKey = "intent_strategy"
 )

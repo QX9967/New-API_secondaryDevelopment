@@ -37,6 +37,7 @@ func StrategyMiddleware() func(c *gin.Context) {
 
 		var strategyModels []string
 		var difficultyLevel string
+		var intentStrategy *model.Strategy
 		usingGroup := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
 		if usingGroup == "" {
 			usingGroup = common.GetContextKeyString(c, constant.ContextKeyTokenGroup)
@@ -67,6 +68,8 @@ func StrategyMiddleware() func(c *gin.Context) {
 				if len(actions.UseModels) > 0 {
 					strategyModels = actions.UseModels
 				}
+			case "intent":
+				intentStrategy = &strategy
 			}
 		}
 
@@ -75,6 +78,9 @@ func StrategyMiddleware() func(c *gin.Context) {
 		}
 		if difficultyLevel != "" {
 			common.SetContextKey(c, constant.ContextKeyStrategyDifficultyLevel, difficultyLevel)
+		}
+		if intentStrategy != nil {
+			common.SetContextKey(c, constant.ContextKeyIntentStrategy, intentStrategy)
 		}
 
 		c.Next()

@@ -481,6 +481,21 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 		RequestBody:      reqBody,
 		ResponseBody:     respBody,
 	})
+	if intentStrategy, ok := common.GetContextKeyType[*model.Strategy](ctx, constant.ContextKeyIntentStrategy); ok && intentStrategy != nil {
+		if common.IntentClassificationEnabled && common.LogDetailEnabled {
+			reqBody := common.GetContextKeyString(ctx, constant.ContextKeyLogRequestBody)
+			if reqBody != "" {
+				userMessages := ExtractUserMessagesFromLog(reqBody)
+				if len(userMessages) > 0 {
+					requestId := common.GetContextKeyString(ctx, common.RequestIdKey)
+					localStrategy := intentStrategy
+					gopool.Go(func() {
+						ClassifyIntentAsync(localStrategy, requestId, userMessages, relayInfo.UsingGroup)
+					})
+				}
+			}
+		}
+	}
 	gopool.Go(func() {
 		perfmetrics.RecordRelaySample(relayInfo, true, int64(summary.CompletionTokens))
 	})
