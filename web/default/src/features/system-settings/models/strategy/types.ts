@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const strategySchema = z.object({
   id: z.number(),
   name: z.string(),
-  type: z.enum(['difficulty', 'time']),
+  type: z.enum(['difficulty', 'time', 'intent']),
   enabled: z.boolean(),
   priority: z.number(),
   classifier_type: z.enum(['channel', 'independent']).optional(),

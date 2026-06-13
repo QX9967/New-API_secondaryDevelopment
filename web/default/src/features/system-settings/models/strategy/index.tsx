@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Clock, Edit, Plus, Trash2, Zap } from 'lucide-react'
+import { Clock, Edit, Plus, Trash2, Zap, Target } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -33,6 +33,7 @@ import { Switch } from '@/components/ui/switch'
 import { SettingsSection } from '../../components/settings-section'
 import { deleteStrategy, getStrategies, updateStrategy } from './api'
 import { DifficultyStrategyDialog } from './difficulty-strategy-dialog'
+import { IntentStrategyDialog } from './intent-strategy-dialog'
 import { TimeStrategyDialog } from './time-strategy-dialog'
 import type { Strategy } from './types'
 
@@ -51,6 +52,8 @@ function StrategyCard(props: {
         <div className='flex items-center gap-2'>
           {strategy.type === 'difficulty' ? (
             <Zap className='text-muted-foreground size-4' />
+          ) : strategy.type === 'intent' ? (
+            <Target className='text-muted-foreground size-4' />
           ) : (
             <Clock className='text-muted-foreground size-4' />
           )}
@@ -97,6 +100,7 @@ export function StrategySection() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [difficultyDialogOpen, setDifficultyDialogOpen] = useState(false)
+  const [intentDialogOpen, setIntentDialogOpen] = useState(false)
   const [timeDialogOpen, setTimeDialogOpen] = useState(false)
   const [editData, setEditData] = useState<Strategy | null>(null)
 
@@ -131,6 +135,7 @@ export function StrategySection() {
   const difficultyStrategies = strategies.filter(
     (s) => s.type === 'difficulty'
   )
+  const intentStrategies = strategies.filter((s) => s.type === 'intent')
   const timeStrategies = strategies.filter((s) => s.type === 'time')
 
   const handleDelete = (id: number) => {
@@ -148,6 +153,8 @@ export function StrategySection() {
     setEditData(strategy)
     if (strategy.type === 'difficulty') {
       setDifficultyDialogOpen(true)
+    } else if (strategy.type === 'intent') {
+      setIntentDialogOpen(true)
     } else {
       setTimeDialogOpen(true)
     }
@@ -155,6 +162,11 @@ export function StrategySection() {
 
   const closeDifficultyDialog = (open: boolean) => {
     setDifficultyDialogOpen(open)
+    if (!open) setEditData(null)
+  }
+
+  const closeIntentDialog = (open: boolean) => {
+    setIntentDialogOpen(open)
     if (!open) setEditData(null)
   }
 
@@ -182,6 +194,35 @@ export function StrategySection() {
         ) : (
           <div className='grid gap-3'>
             {difficultyStrategies.map((strategy) => (
+              <StrategyCard
+                key={strategy.id}
+                strategy={strategy}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onToggle={handleToggle}
+              />
+            ))}
+          </div>
+        )}
+      </SettingsSection>
+
+      <SettingsSection title={t('Intent Strategy')}>
+        <div className='flex items-center justify-between'>
+          <p className='text-muted-foreground text-sm'>
+            {t('Classify request intent for work/personal routing')}
+          </p>
+          <Button size='sm' onClick={() => { setEditData(null); setIntentDialogOpen(true) }}>
+            <Plus className='mr-1 size-3' />
+            {t('Add Intent Strategy')}
+          </Button>
+        </div>
+        {intentStrategies.length === 0 ? (
+          <p className='text-muted-foreground py-8 text-center text-sm'>
+            {t('No intent strategies yet')}
+          </p>
+        ) : (
+          <div className='grid gap-3'>
+            {intentStrategies.map((strategy) => (
               <StrategyCard
                 key={strategy.id}
                 strategy={strategy}
@@ -226,6 +267,14 @@ export function StrategySection() {
       <DifficultyStrategyDialog
         open={difficultyDialogOpen}
         onOpenChange={closeDifficultyDialog}
+        editData={editData}
+        onSuccess={() =>
+          queryClient.invalidateQueries({ queryKey: ['strategies'] })
+        }
+      />
+      <IntentStrategyDialog
+        open={intentDialogOpen}
+        onOpenChange={closeIntentDialog}
         editData={editData}
         onSuccess={() =>
           queryClient.invalidateQueries({ queryKey: ['strategies'] })
