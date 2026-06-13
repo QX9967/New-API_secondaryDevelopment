@@ -1,6 +1,7 @@
 {
   "Assign models to each difficulty level. These models will be used when a request is classified at that level.": "Assign models to each difficulty level. These models will be used when a request is classified at that level.",
   "At least one model must be assigned to a difficulty level": "At least one model must be assigned to a difficulty level",
+  "Choose a cheap model to judge request difficulty.": "Choose a cheap model to judge request difficulty. The system will automatically find an available channel.",
   "Classify request difficulty and route to appropriate models": "Classify request difficulty and route to appropriate models",
   "Comma-separated model names to disable during this time period.": "Comma-separated model names to disable during this time period.",
   "Comma-separated model names to enable during this time period.": "Comma-separated model names to enable during this time period.",
