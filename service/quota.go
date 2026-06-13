@@ -251,6 +251,7 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 		UseTimeSeconds:   int(useTimeSeconds),
 		IsStream:         relayInfo.IsStream,
 		Group:            relayInfo.UsingGroup,
+		DifficultyLevel:  common.GetContextKeyString(ctx, constant.ContextKeyStrategyDifficultyLevel),
 		Other:            other,
 		RequestBody:      common.GetContextKeyString(ctx, constant.ContextKeyLogRequestBody),
 		ResponseBody:     common.GetContextKeyString(ctx, constant.ContextKeyLogResponseBody),

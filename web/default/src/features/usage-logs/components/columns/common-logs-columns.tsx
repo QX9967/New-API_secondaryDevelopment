@@ -625,6 +625,35 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
     },
 
     {
+      accessorKey: 'difficulty_level',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title={t('Difficulty')} />
+      ),
+      cell: ({ row }) => {
+        const log = row.original
+        if (!isDisplayableLogType(log.type)) return null
+
+        const level = row.getValue('difficulty_level') as string
+        if (!level) return null
+
+        const variantMap: Record<string, string> = {
+          simple: 'success',
+          medium: 'warning',
+          hard: 'danger',
+        }
+
+        return (
+          <StatusBadge
+            label={level}
+            variant={(variantMap[level] || 'neutral') as any}
+            size='sm'
+          />
+        )
+      },
+      meta: { label: t('Difficulty') },
+    },
+
+    {
       accessorKey: 'use_time',
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title={t('Timing')} />

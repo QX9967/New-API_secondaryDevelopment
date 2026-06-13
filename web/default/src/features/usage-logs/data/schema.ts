@@ -43,6 +43,7 @@ export const usageLogSchema = z.object({
   key: z.string().default(''),
   group: z.string().default(''),
   ip: z.string().default(''),
+  difficulty_level: z.string().default(''),
   other: z.string().default(''),
   request_id: z.string().default(''),
   upstream_request_id: z.string().default(''),

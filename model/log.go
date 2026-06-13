@@ -53,6 +53,7 @@ type Log struct {
 	Ip                string `json:"ip" gorm:"index;default:''"`
 	RequestId         string `json:"request_id,omitempty" gorm:"type:varchar(64);index:idx_logs_request_id;default:''"`
 	UpstreamRequestId string `json:"upstream_request_id,omitempty" gorm:"type:varchar(128);index:idx_logs_upstream_request_id;default:''"`
+	DifficultyLevel   string `json:"difficulty_level" gorm:"size:32;default:''"`
 	Other             string `json:"other"`
 	RequestBody       string `json:"request_body,omitempty" gorm:"type:text"`
 	ResponseBody      string `json:"response_body,omitempty" gorm:"type:text"`
@@ -223,6 +224,7 @@ type RecordConsumeLogParams struct {
 	UseTimeSeconds   int                    `json:"use_time_seconds"`
 	IsStream         bool                   `json:"is_stream"`
 	Group            string                 `json:"group"`
+	DifficultyLevel  string                 `json:"difficulty_level"`
 	Other            map[string]interface{} `json:"other"`
 	RequestBody      string                 `json:"request_body"`
 	ResponseBody     string                 `json:"response_body"`
@@ -260,6 +262,7 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 		UseTime:          params.UseTimeSeconds,
 		IsStream:         params.IsStream,
 		Group:            params.Group,
+		DifficultyLevel:  params.DifficultyLevel,
 		Ip: func() string {
 			if needRecordIp {
 				return c.ClientIP()

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/model"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
@@ -148,16 +149,17 @@ func ChargeViolationFeeIfNeeded(ctx *gin.Context, relayInfo *relaycommon.RelayIn
 	}
 
 	model.RecordConsumeLog(ctx, relayInfo.UserId, model.RecordConsumeLogParams{
-		ChannelId:      relayInfo.ChannelId,
-		ModelName:      relayInfo.OriginModelName,
-		TokenName:      tokenName,
-		Quota:          feeQuota,
-		Content:        "Violation fee charged",
-		TokenId:        relayInfo.TokenId,
-		UseTimeSeconds: int(useTimeSeconds),
-		IsStream:       relayInfo.IsStream,
-		Group:          relayInfo.UsingGroup,
-		Other:          other,
+		ChannelId:       relayInfo.ChannelId,
+		ModelName:       relayInfo.OriginModelName,
+		TokenName:       tokenName,
+		Quota:           feeQuota,
+		Content:         "Violation fee charged",
+		TokenId:         relayInfo.TokenId,
+		UseTimeSeconds:  int(useTimeSeconds),
+		IsStream:        relayInfo.IsStream,
+		Group:           relayInfo.UsingGroup,
+		DifficultyLevel: common.GetContextKeyString(ctx, constant.ContextKeyStrategyDifficultyLevel),
+		Other:           other,
 	})
 
 	return true

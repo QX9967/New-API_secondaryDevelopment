@@ -476,6 +476,7 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 		UseTimeSeconds:   int(summary.UseTimeSeconds),
 		IsStream:         relayInfo.IsStream,
 		Group:            relayInfo.UsingGroup,
+		DifficultyLevel:  common.GetContextKeyString(ctx, constant.ContextKeyStrategyDifficultyLevel),
 		Other:            other,
 		RequestBody:      reqBody,
 		ResponseBody:     respBody,
