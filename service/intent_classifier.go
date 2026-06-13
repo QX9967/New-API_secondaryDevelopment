@@ -247,7 +247,7 @@ func classifyIntentViaIndependent(apiKey, baseUrl, modelName string, messages []
 		return nil, fmt.Errorf("intent classifier returned status %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read intent response: %w", err)
 	}
@@ -310,6 +310,8 @@ func getCachedIntentClassification(key string) (*IntentClassifyResult, bool) {
 	return nil, false
 }
 
+const maxIntentCacheSize = 10000
+
 func setCachedIntentClassification(key string, result *IntentClassifyResult) {
 	intentClassifyCacheLock.Lock()
 	defer intentClassifyCacheLock.Unlock()
@@ -318,6 +320,15 @@ func setCachedIntentClassification(key string, result *IntentClassifyResult) {
 		if now.After(expires) {
 			delete(intentClassifyCache, k)
 			delete(intentCacheEntries, k)
+		}
+	}
+	if len(intentClassifyCache) >= maxIntentCacheSize {
+		for k := range intentClassifyCache {
+			delete(intentClassifyCache, k)
+			delete(intentCacheEntries, k)
+			if len(intentClassifyCache) < maxIntentCacheSize/2 {
+				break
+			}
 		}
 	}
 	intentClassifyCache[key] = *result
