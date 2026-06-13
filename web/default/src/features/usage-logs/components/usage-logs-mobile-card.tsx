@@ -34,7 +34,7 @@ import {
   textColorMap,
   type StatusVariant,
 } from '@/components/status-badge'
-import { LOG_TYPE_ENUM } from '../constants'
+import { LOG_TYPE_ENUM, INTENT_CATEGORY_COLORS } from '../constants'
 import { getLogTypeConfig } from '../lib/utils'
 import type { LogCategory } from '../types'
 
@@ -182,9 +182,13 @@ function CommonLogsCard<TData>({
 
   const modelCell = cells.get('model_name')
   const quotaCell = cells.get('quota')
+  const intentCell = cells.get('intent_category')
   const rowData = cells.get('created_at')?.row.original as
     | Record<string, unknown>
     | undefined
+
+  const intentCategory = rowData?.intent_category as string | undefined
+  const intentSubCategory = rowData?.intent_sub_category as string | undefined
 
   return (
     <div className='space-y-2.5'>
@@ -227,6 +231,30 @@ function CommonLogsCard<TData>({
           cell={cells.get('prompt_tokens')}
           primaryOnly
         />
+        {intentCategory && (
+          <div className='bg-muted/20 min-w-0 rounded-md px-2 py-1.5'>
+            <div className='text-muted-foreground mb-1 text-[11px] leading-none font-medium select-none'>
+              {t('Intent')}
+            </div>
+            <div className='flex items-center gap-1.5'>
+              <span
+                className={cn(
+                  'inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium',
+                  INTENT_CATEGORY_COLORS[intentCategory] === 'success' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                  INTENT_CATEGORY_COLORS[intentCategory] === 'danger' && 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+                  INTENT_CATEGORY_COLORS[intentCategory] === 'neutral' && 'bg-muted text-muted-foreground'
+                )}
+              >
+                {intentCategory}
+              </span>
+              {intentSubCategory && (
+                <span className='text-muted-foreground/60 text-[11px]'>
+                  {intentSubCategory}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         <SummaryField
           label={t('Details')}
           cell={cells.get('content')}

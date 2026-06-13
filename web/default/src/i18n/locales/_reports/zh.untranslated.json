@@ -1,3 +1,4 @@
 {
+  "Choose a model to classify request intent.": "选择一个模型来判断请求意图，系统会自动找到可用的通道。推荐用 gpt-4o-mini。",
   "Log the client IP address for every API request. Useful for auditing and security monitoring.": "记录每次 API 请求的客户端 IP 地址，用于审计和安全监控。"
 }

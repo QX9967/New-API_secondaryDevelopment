@@ -216,6 +216,12 @@ export function buildApiParams(config: {
     ...(searchParams.upstreamRequestId
       ? { upstream_request_id: String(searchParams.upstreamRequestId) }
       : {}),
+    ...(searchParams.intentCategory
+      ? { intent_category: String(searchParams.intentCategory) }
+      : {}),
+    ...(searchParams.intentSubCategory
+      ? { intent_sub_category: String(searchParams.intentSubCategory) }
+      : {}),
     ...buildTimeRangeParams(searchParams, false),
   }
 

@@ -37,7 +37,7 @@ import {
 } from '@/components/ui/tooltip'
 import { DataTableColumnHeader } from '@/components/data-table'
 import { StatusBadge, type StatusBadgeProps } from '@/components/status-badge'
-import { LOG_TYPE_ALL_VALUE } from '../../constants'
+import { LOG_TYPE_ALL_VALUE, INTENT_CATEGORY_COLORS } from '../../constants'
 import type { UsageLog } from '../../data/schema'
 import {
   formatModelName,
@@ -651,6 +651,45 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
         )
       },
       meta: { label: t('Difficulty') },
+    },
+
+    {
+      accessorKey: 'intent_category',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title={t('Intent')} />
+      ),
+      cell: ({ row }) => {
+        const log = row.original
+        if (!isDisplayableLogType(log.type)) return null
+
+        const category = row.getValue('intent_category') as string
+        const subCategory = log.intent_sub_category
+
+        if (!category) {
+          return <span className='text-muted-foreground/40 text-xs'>—</span>
+        }
+
+        const variant =
+          (INTENT_CATEGORY_COLORS[category] || 'neutral') as StatusBadgeProps['variant']
+
+        return (
+          <div className='flex flex-col gap-0.5'>
+            <StatusBadge
+              label={category}
+              variant={variant}
+              size='sm'
+              copyable={false}
+              className='!text-xs [&_span]:!text-xs'
+            />
+            {subCategory && (
+              <span className='text-muted-foreground/60 truncate [font-family:var(--font-body)] !text-xs'>
+                {subCategory}
+              </span>
+            )}
+          </div>
+        )
+      },
+      meta: { label: t('Intent') },
     },
 
     {

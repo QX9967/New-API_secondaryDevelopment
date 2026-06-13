@@ -37,7 +37,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { LOG_TYPE_ALL_VALUE, LOG_TYPE_FILTERS } from '../constants'
+import { LOG_TYPE_ALL_VALUE, LOG_TYPE_FILTERS, INTENT_CATEGORY_FILTERS } from '../constants'
 import { buildSearchParams } from '../lib/filter'
 import { getDefaultTimeRange } from '../lib/utils'
 import type { CommonLogFilters } from '../types'
@@ -79,6 +79,7 @@ export function CommonLogsFilterBar<TData>(
     return { startTime: start, endTime: end }
   })
   const [logType, setLogType] = useState<LogTypeValue>(LOG_TYPE_ALL_VALUE)
+  const [intentCategory, setIntentCategory] = useState('')
   const [initialized, setInitialized] = useState(false)
 
   // On mount, clear stale search params from URL (e.g. after account switch)
@@ -94,7 +95,8 @@ export function CommonLogsFilterBar<TData>(
       searchParams.username ||
       searchParams.channel ||
       searchParams.requestId ||
-      searchParams.upstreamRequestId
+      searchParams.upstreamRequestId ||
+      searchParams.intentCategory
 
     if (hasStaleParams) {
       const { start, end } = getDefaultTimeRange()
@@ -138,6 +140,7 @@ export function CommonLogsFilterBar<TData>(
         ? typeArr[0]
         : LOG_TYPE_ALL_VALUE
     setLogType(nextLogType)
+    setIntentCategory(searchParams.intentCategory || '')
   }, [
     searchParams.startTime,
     searchParams.endTime,
@@ -150,6 +153,7 @@ export function CommonLogsFilterBar<TData>(
     searchParams.requestId,
     searchParams.upstreamRequestId,
     searchParams.type,
+    searchParams.intentCategory,
   ])
 
   const handleChange = useCallback(
@@ -167,18 +171,20 @@ export function CommonLogsFilterBar<TData>(
       search: {
         ...filterParams,
         type: [logType],
+        intentCategory: intentCategory || undefined,
         page: 1,
       },
     })
     queryClient.invalidateQueries({ queryKey: ['logs'] })
     queryClient.invalidateQueries({ queryKey: ['usage-logs-stats'] })
-  }, [filters, logType, navigate, queryClient])
+  }, [filters, logType, intentCategory, navigate, queryClient])
 
   const handleReset = useCallback(() => {
     const { start, end } = getDefaultTimeRange()
     const resetFilters: CommonLogFilters = { startTime: start, endTime: end }
     setFilters(resetFilters)
     setLogType(LOG_TYPE_ALL_VALUE)
+    setIntentCategory('')
 
     navigate({
       to: '/usage-logs/$section',
@@ -210,8 +216,9 @@ export function CommonLogsFilterBar<TData>(
     !!filters.upstreamRequestId
 
   const hasTypeFilter = logType !== LOG_TYPE_ALL_VALUE
+  const hasIntentFilter = intentCategory !== ''
   const hasAdditionalFilters =
-    !!filters.model || !!filters.group || hasTypeFilter || hasExpandedFilters
+    !!filters.model || !!filters.group || hasTypeFilter || hasIntentFilter || hasExpandedFilters
 
   const expandedFilterCount = [
     filters.key,
@@ -316,6 +323,40 @@ export function CommonLogsFilterBar<TData>(
       </Select>
     </LogsFilterField>
   )
+  const intentCategoryItems = useMemo(
+    () =>
+      INTENT_CATEGORY_FILTERS.map((item) => ({
+        value: item.value,
+        label: t(item.label),
+      })),
+    [t]
+  )
+  const intentCategoryLabel =
+    intentCategoryItems.find((item) => item.value === intentCategory)?.label ?? t('All Intents')
+  const intentFilter = (
+    <LogsFilterField>
+      <Select
+        items={intentCategoryItems}
+        value={intentCategory}
+        onValueChange={(value) => {
+          setIntentCategory(value ?? '')
+        }}
+      >
+        <SelectTrigger>
+          <SelectValue>{intentCategoryLabel}</SelectValue>
+        </SelectTrigger>
+        <SelectContent alignItemWithTrigger={false}>
+          <SelectGroup>
+            {INTENT_CATEGORY_FILTERS.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {t(item.label)}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </LogsFilterField>
+  )
   const advancedFilters = (
     <>
       <LogsFilterField>
@@ -386,6 +427,7 @@ export function CommonLogsFilterBar<TData>(
           {typeFilter}
           {modelFilter}
           {groupFilter}
+          {intentFilter}
         </>
       }
       advancedFilters={advancedFilters}
@@ -395,11 +437,12 @@ export function CommonLogsFilterBar<TData>(
           {typeFilter}
           {modelFilter}
           {groupFilter}
+          {intentFilter}
           {advancedFilters}
         </>
       }
       mobileFilterCount={
-        [hasTypeFilter, filters.model, filters.group].filter(Boolean).length +
+        [hasTypeFilter, filters.model, filters.group, hasIntentFilter].filter(Boolean).length +
         expandedFilterCount
       }
       hasAdvancedActiveFilters={hasExpandedFilters}

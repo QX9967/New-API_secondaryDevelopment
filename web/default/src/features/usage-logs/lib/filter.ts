@@ -59,6 +59,12 @@ export function buildSearchParams(
         ...(commonFilters.upstreamRequestId && {
           upstreamRequestId: commonFilters.upstreamRequestId,
         }),
+        ...(commonFilters.intentCategory && {
+          intentCategory: commonFilters.intentCategory,
+        }),
+        ...(commonFilters.intentSubCategory && {
+          intentSubCategory: commonFilters.intentSubCategory,
+        }),
       }
     }
     case 'drawing': {

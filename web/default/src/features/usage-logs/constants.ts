@@ -324,6 +324,29 @@ export const TASK_PLATFORM_MAPPINGS: Record<string, StatusMapping> = {
 }
 
 // ============================================================================
+// Intent Category Constants
+// ============================================================================
+
+/**
+ * Intent category values for filtering
+ */
+export const INTENT_CATEGORY_FILTERS = [
+  { label: 'All Intents', value: '' },
+  { label: 'Work', value: 'work' },
+  { label: 'Non-work', value: 'non_work' },
+  { label: 'Unknown', value: 'unknown' },
+] as const
+
+/**
+ * Intent category color mapping for badges
+ */
+export const INTENT_CATEGORY_COLORS: Record<string, string> = {
+  work: 'success',
+  non_work: 'danger',
+  unknown: 'neutral',
+}
+
+// ============================================================================
 // Log Category Labels
 // ============================================================================
 
