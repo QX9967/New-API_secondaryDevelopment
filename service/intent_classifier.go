@@ -236,7 +236,7 @@ func classifyIntentViaIndependent(apiKey, baseUrl, modelName string, messages []
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 
-	client := &http.Client{Timeout: time.Duration(timeout) * time.Millisecond}
+	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("intent classifier request failed: %w", err)
@@ -313,6 +313,13 @@ func getCachedIntentClassification(key string) (*IntentClassifyResult, bool) {
 func setCachedIntentClassification(key string, result *IntentClassifyResult) {
 	intentClassifyCacheLock.Lock()
 	defer intentClassifyCacheLock.Unlock()
+	now := time.Now()
+	for k, expires := range intentCacheEntries {
+		if now.After(expires) {
+			delete(intentClassifyCache, k)
+			delete(intentCacheEntries, k)
+		}
+	}
 	intentClassifyCache[key] = *result
-	intentCacheEntries[key] = time.Now().Add(intentClassifyCacheTTL)
+	intentCacheEntries[key] = now.Add(intentClassifyCacheTTL)
 }
