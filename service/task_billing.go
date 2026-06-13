@@ -11,6 +11,8 @@ import (
 	"github.com/QuantumNous/new-api/model"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
+
+	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-gonic/gin"
 )
 
@@ -61,6 +63,21 @@ func LogTaskConsumption(c *gin.Context, info *relaycommon.RelayInfo) {
 		DifficultyLevel: common.GetContextKeyString(c, constant.ContextKeyStrategyDifficultyLevel),
 		Other:           other,
 	})
+	if intentStrategy, ok := common.GetContextKeyType[*model.Strategy](c, constant.ContextKeyIntentStrategy); ok && intentStrategy != nil {
+		if common.IntentClassificationEnabled && common.LogDetailEnabled {
+			reqBody := common.GetContextKeyString(c, constant.ContextKeyLogRequestBody)
+			if reqBody != "" {
+				userMessages := ExtractUserMessagesFromLog(reqBody)
+				if len(userMessages) > 0 {
+					requestId := common.GetContextKeyString(c, common.RequestIdKey)
+					localStrategy := intentStrategy
+					gopool.Go(func() {
+						ClassifyIntentAsync(localStrategy, requestId, userMessages, info.UsingGroup)
+					})
+				}
+			}
+		}
+	}
 	model.UpdateUserUsedQuotaAndRequestCount(info.UserId, info.PriceData.Quota)
 	model.UpdateChannelUsedQuota(info.ChannelId, info.PriceData.Quota)
 }

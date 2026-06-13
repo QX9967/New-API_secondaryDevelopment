@@ -256,6 +256,22 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 		RequestBody:      common.GetContextKeyString(ctx, constant.ContextKeyLogRequestBody),
 		ResponseBody:     common.GetContextKeyString(ctx, constant.ContextKeyLogResponseBody),
 	})
+	if intentStrategy, ok := common.GetContextKeyType[*model.Strategy](ctx, constant.ContextKeyIntentStrategy); ok && intentStrategy != nil {
+		if common.IntentClassificationEnabled && common.LogDetailEnabled {
+			reqBody := common.GetContextKeyString(ctx, constant.ContextKeyLogRequestBody)
+			if reqBody != "" {
+				userMessages := ExtractUserMessagesFromLog(reqBody)
+				if len(userMessages) > 0 {
+					requestId := common.GetContextKeyString(ctx, common.RequestIdKey)
+					localStrategy := intentStrategy
+					group := common.GetContextKeyString(ctx, constant.ContextKeyUsingGroup)
+					gopool.Go(func() {
+						ClassifyIntentAsync(localStrategy, requestId, userMessages, group)
+					})
+				}
+			}
+		}
+	}
 }
 
 func CalcOpenRouterCacheCreateTokens(usage dto.Usage, priceData types.PriceData) int {
@@ -379,6 +395,21 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 		RequestBody:      common.GetContextKeyString(ctx, constant.ContextKeyLogRequestBody),
 		ResponseBody:     common.GetContextKeyString(ctx, constant.ContextKeyLogResponseBody),
 	})
+	if intentStrategy, ok := common.GetContextKeyType[*model.Strategy](ctx, constant.ContextKeyIntentStrategy); ok && intentStrategy != nil {
+		if common.IntentClassificationEnabled && common.LogDetailEnabled {
+			reqBody := common.GetContextKeyString(ctx, constant.ContextKeyLogRequestBody)
+			if reqBody != "" {
+				userMessages := ExtractUserMessagesFromLog(reqBody)
+				if len(userMessages) > 0 {
+					requestId := common.GetContextKeyString(ctx, common.RequestIdKey)
+					localStrategy := intentStrategy
+					gopool.Go(func() {
+						ClassifyIntentAsync(localStrategy, requestId, userMessages, relayInfo.UsingGroup)
+					})
+				}
+			}
+		}
+	}
 	gopool.Go(func() {
 		perfmetrics.RecordRelaySample(relayInfo, true, int64(usage.CompletionTokens))
 	})

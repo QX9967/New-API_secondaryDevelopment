@@ -13,6 +13,7 @@ import (
 	"github.com/QuantumNous/new-api/setting/model_setting"
 	"github.com/QuantumNous/new-api/types"
 
+	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/shopspring/decimal"
 
 	"github.com/gin-gonic/gin"
@@ -161,6 +162,22 @@ func ChargeViolationFeeIfNeeded(ctx *gin.Context, relayInfo *relaycommon.RelayIn
 		DifficultyLevel: common.GetContextKeyString(ctx, constant.ContextKeyStrategyDifficultyLevel),
 		Other:           other,
 	})
+
+	if intentStrategy, ok := common.GetContextKeyType[*model.Strategy](ctx, constant.ContextKeyIntentStrategy); ok && intentStrategy != nil {
+		if common.IntentClassificationEnabled && common.LogDetailEnabled {
+			reqBody := common.GetContextKeyString(ctx, constant.ContextKeyLogRequestBody)
+			if reqBody != "" {
+				userMessages := ExtractUserMessagesFromLog(reqBody)
+				if len(userMessages) > 0 {
+					requestId := common.GetContextKeyString(ctx, common.RequestIdKey)
+					localStrategy := intentStrategy
+					gopool.Go(func() {
+						ClassifyIntentAsync(localStrategy, requestId, userMessages, relayInfo.UsingGroup)
+					})
+				}
+			}
+		}
+	}
 
 	return true
 }
