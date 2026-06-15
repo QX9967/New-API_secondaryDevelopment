@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/model"
 )
 
@@ -28,33 +30,11 @@ type IntentClassifyResult struct {
 	Reason      string  `json:"reason"`
 }
 
-const defaultIntentClassifierPrompt = `You are a request intent classifier for a corporate AI system. Your job is to determine whether the user's request is work-related or personal/non-work.
-
-Classification categories:
-
-work (工作):
-- code_development: Code writing, debugging, code review, DevOps
-- doc_writing: Documents, reports, emails, presentations
-- data_analysis: Data analysis, SQL, reports, charts
-- customer_service: Customer communication, ticket handling
-- meeting_summary: Meeting notes, summaries
-- translation: Work-related translation
-- research: Technical research, solution comparison
-- other_work: Other work-related tasks
-
-non_work (非工作):
-- entertainment: Entertainment, jokes, stories, roleplay
-- personal_study: Personal learning (not job-related)
-- life_chat: Casual conversation, emotional advice
-- creative_writing: Creative writing (non-work)
-- gaming: Gaming related
-- other_non_work: Other non-work tasks
-
-unknown (无法判定):
-- ambiguous: Content is ambiguous or cannot be determined
-
-Return only JSON:
-{"category": "work|non_work|unknown", "subcategory": "...", "confidence": 0.0-1.0, "reason": "brief reason in Chinese"}`
+const defaultIntentClassifierPrompt = `Classify the user's request intent.
+Return only JSON, no thinking, no explanation, no markdown:
+{"category":"work|non_work|unknown","subcategory":"code_development|doc_writing|data_analysis|customer_service|meeting_summary|translation|research|other_work|entertainment|personal_study|life_chat|creative_writing|gaming|other_non_work|ambiguous","confidence":0-1,"reason":"中文简短原因"}
+User request:
+{{user_message}}`
 
 func ClassifyIntentAsync(strategy *model.Strategy, requestId string, userMessages []map[string]string, group string) {
 	if !common.IntentClassificationEnabled {
@@ -94,13 +74,13 @@ func ClassifyIntentAsync(strategy *model.Strategy, requestId string, userMessage
 			classifyErr = fmt.Errorf("intent strategy: channel type requires channelId or modelName")
 		}
 	} else if strategy.ClassifierType == "independent" && strategy.ClassifierApiKey != "" {
-		result, classifyErr = classifyIntentViaIndependent(strategy.ClassifierApiKey, strategy.ClassifierBaseUrl, strategy.ClassifierModel, classifyMessages, strategy.ClassifierTimeout)
+		result, classifyErr = classifyIntentViaIndependent(strategy.ClassifierApiKey, strategy.ClassifierBaseUrl, strategy.ClassifierModel, classifyMessages, strategy.ClassifierTimeout, strategy.ClassifierDisableThinking)
 	} else {
 		classifyErr = fmt.Errorf("intent strategy: invalid classifier configuration")
 	}
 
 	if classifyErr != nil {
-		common.SysLog("intent classification failed: " + classifyErr.Error())
+		common.SysLog(fmt.Sprintf("[Intent] classification failed: %v", classifyErr))
 		return
 	}
 
@@ -108,9 +88,13 @@ func ClassifyIntentAsync(strategy *model.Strategy, requestId string, userMessage
 		return
 	}
 
-	if result.Category != "work" && result.Category != "non_work" && result.Category != "unknown" {
-		result.Category = "unknown"
-		result.SubCategory = "ambiguous"
+	common.SysLog(fmt.Sprintf("[Intent] classification result: category=%s, sub=%s, confidence=%.2f", result.Category, result.SubCategory, result.Confidence))
+
+	normalizeIntentResult(result)
+
+	if result.Category != "工作" && result.Category != "非工作" && result.Category != "未知" {
+		result.Category = "未知"
+		result.SubCategory = "模糊"
 	}
 
 	setCachedIntentClassification(cacheKey, result)
@@ -120,25 +104,278 @@ func ClassifyIntentAsync(strategy *model.Strategy, requestId string, userMessage
 	}
 }
 
+var intentCategoryMap = map[string]string{
+	"work":     "工作",
+	"non_work": "非工作",
+	"unknown":  "未知",
+	"工作":       "工作",
+	"非工作":      "非工作",
+	"未知":       "未知",
+}
+
+var intentSubCategoryMap = map[string]string{
+	"code_development": "代码开发",
+	"doc_writing":      "文档撰写",
+	"data_analysis":    "数据分析",
+	"customer_service": "客户服务",
+	"meeting_summary":  "会议总结",
+	"translation":      "翻译",
+	"research":         "技术调研",
+	"other_work":       "其他工作",
+	"entertainment":    "娱乐",
+	"personal_study":   "个人学习",
+	"life_chat":        "生活聊天",
+	"creative_writing": "创意写作",
+	"gaming":           "游戏",
+	"other_non_work":   "其他非工作",
+	"ambiguous":        "模糊",
+	"代码开发":             "代码开发",
+	"文档撰写":             "文档撰写",
+	"数据分析":             "数据分析",
+	"客户服务":             "客户服务",
+	"会议总结":             "会议总结",
+	"翻译":               "翻译",
+	"技术调研":             "技术调研",
+	"其他工作":             "其他工作",
+	"娱乐":               "娱乐",
+	"个人学习":             "个人学习",
+	"生活聊天":             "生活聊天",
+	"创意写作":             "创意写作",
+	"游戏":               "游戏",
+	"其他非工作":            "其他非工作",
+	"模糊":               "模糊",
+}
+
+func normalizeIntentResult(result *IntentClassifyResult) {
+	if v, ok := intentCategoryMap[result.Category]; ok {
+		result.Category = v
+	}
+	if v, ok := intentSubCategoryMap[result.SubCategory]; ok {
+		result.SubCategory = v
+	}
+}
+
 func ExtractUserMessagesFromLog(requestBody string) []map[string]string {
 	if requestBody == "" {
 		return nil
 	}
 	var body map[string]interface{}
 	if err := common.Unmarshal([]byte(requestBody), &body); err != nil {
+		return extractUserMessagesFallback(requestBody)
+	}
+	return extractUserMessagesFromMap(body)
+}
+
+func normalizeIntentClassifierTimeout(timeout int) int {
+	if timeout < 15000 {
+		return 15000
+	}
+	return timeout
+}
+
+func ExtractUserMessagesFromRequest(request dto.Request) []map[string]string {
+	if request == nil {
 		return nil
 	}
+	switch r := request.(type) {
+	case *dto.GeneralOpenAIRequest:
+		return extractUserMessagesFromOpenAIRequest(r)
+	case *dto.ClaudeRequest:
+		return extractUserMessagesFromClaudeRequest(r)
+	case *dto.GeminiChatRequest:
+		return extractUserMessagesFromGeminiRequest(r)
+	case *dto.OpenAIResponsesRequest:
+		return extractUserMessagesFromResponsesRequest(r)
+	default:
+		return nil
+	}
+}
+
+func extractUserMessagesFromOpenAIRequest(r *dto.GeneralOpenAIRequest) []map[string]string {
+	if r == nil {
+		return nil
+	}
+	var messages []map[string]string
+	for _, message := range r.Messages {
+		if message.Role != "user" || message.Content == nil {
+			continue
+		}
+		parts := message.ParseContent()
+		var textParts []string
+		for _, part := range parts {
+			if part.Type == dto.ContentTypeText && part.Text != "" {
+				textParts = append(textParts, part.Text)
+			}
+		}
+		if len(textParts) > 0 {
+			messages = append(messages, map[string]string{
+				"role":    "user",
+				"content": strings.Join(textParts, "\n"),
+			})
+		}
+	}
+	return messages
+}
+
+func extractUserMessagesFromClaudeRequest(r *dto.ClaudeRequest) []map[string]string {
+	if r == nil {
+		return nil
+	}
+	var messages []map[string]string
+	for _, message := range r.Messages {
+		if message.Role != "user" {
+			continue
+		}
+		content := message.GetStringContent()
+		if content != "" {
+			messages = append(messages, map[string]string{
+				"role":    "user",
+				"content": content,
+			})
+		}
+	}
+	return messages
+}
+
+func extractUserMessagesFromGeminiRequest(r *dto.GeminiChatRequest) []map[string]string {
+	if r == nil {
+		return nil
+	}
+	var messages []map[string]string
+	for _, content := range r.Contents {
+		if content.Role != "user" {
+			continue
+		}
+		var textParts []string
+		for _, part := range content.Parts {
+			if part.Text != "" {
+				textParts = append(textParts, part.Text)
+			}
+		}
+		if len(textParts) > 0 {
+			messages = append(messages, map[string]string{
+				"role":    "user",
+				"content": strings.Join(textParts, "\n"),
+			})
+		}
+	}
+	return messages
+}
+
+func extractUserMessagesFromResponsesRequest(r *dto.OpenAIResponsesRequest) []map[string]string {
+	if r == nil {
+		return nil
+	}
+	var messages []map[string]string
+	if common.GetJsonType(r.Input) == "string" {
+		var str string
+		if err := common.Unmarshal(r.Input, &str); err == nil && str != "" {
+			messages = append(messages, map[string]string{
+				"role":    "user",
+				"content": str,
+			})
+		}
+		return messages
+	}
+	if common.GetJsonType(r.Input) != "array" {
+		return messages
+	}
+	var inputs []dto.Input
+	if err := common.Unmarshal(r.Input, &inputs); err != nil {
+		return messages
+	}
+	for _, input := range inputs {
+		if input.Role != "user" {
+			continue
+		}
+		if common.GetJsonType(input.Content) == "string" {
+			var str string
+			if err := common.Unmarshal(input.Content, &str); err == nil && str != "" {
+				messages = append(messages, map[string]string{
+					"role":    "user",
+					"content": str,
+				})
+			}
+			continue
+		}
+		if common.GetJsonType(input.Content) != "array" {
+			continue
+		}
+		var items []dto.MediaInput
+		if err := common.Unmarshal(input.Content, &items); err != nil {
+			continue
+		}
+		var textParts []string
+		for _, item := range items {
+			if item.Type == "input_text" && item.Text != "" {
+				textParts = append(textParts, item.Text)
+			}
+		}
+		if len(textParts) > 0 {
+			messages = append(messages, map[string]string{
+				"role":    "user",
+				"content": strings.Join(textParts, "\n"),
+			})
+		}
+	}
+	return messages
+}
+
+func extractUserMessagesFallback(requestBody string) []map[string]string {
+	var messages []map[string]string
+	re := regexp.MustCompile(`"role"\s*:\s*"user"\s*,\s*"content"\s*:\s*"((?:[^"\\]|\\.)*)"`)
+	matches := re.FindAllStringSubmatch(requestBody, -1)
+	for _, match := range matches {
+		if len(match) > 1 {
+			content := match[1]
+			content = strings.ReplaceAll(content, `\"`, `"`)
+			content = strings.ReplaceAll(content, `\\`, `\`)
+			content = strings.ReplaceAll(content, `\n`, "\n")
+			content = strings.ReplaceAll(content, `\r`, "\r")
+			content = strings.ReplaceAll(content, `\t`, "\t")
+			if content != "" {
+				messages = append(messages, map[string]string{
+					"role":    "user",
+					"content": content,
+				})
+			}
+		}
+	}
+	return messages
+}
+
+func extractUserMessagesFromMap(body map[string]interface{}) []map[string]string {
 	var messages []map[string]string
 	if msgs, ok := body["messages"].([]interface{}); ok {
 		for _, msg := range msgs {
 			if m, ok := msg.(map[string]interface{}); ok {
 				role, _ := m["role"].(string)
-				content, _ := m["content"].(string)
-				if role == "user" && content != "" {
-					messages = append(messages, map[string]string{
-						"role":    role,
-						"content": content,
-					})
+				if role != "user" {
+					continue
+				}
+				switch v := m["content"].(type) {
+				case string:
+					if v != "" {
+						messages = append(messages, map[string]string{
+							"role":    "user",
+							"content": v,
+						})
+					}
+				case []interface{}:
+					var textParts []string
+					for _, part := range v {
+						if p, ok := part.(map[string]interface{}); ok {
+							if t, ok := p["text"].(string); ok && t != "" {
+								textParts = append(textParts, t)
+							}
+						}
+					}
+					if len(textParts) > 0 {
+						messages = append(messages, map[string]string{
+							"role":    "user",
+							"content": strings.Join(textParts, "\n"),
+						})
+					}
 				}
 			}
 		}
@@ -201,13 +438,11 @@ func classifyIntentViaChannel(strategy *model.Strategy, messages []map[string]st
 		}
 	}
 
-	return classifyIntentViaIndependent(key, baseUrl, actualModel, messages, strategy.ClassifierTimeout)
+	return classifyIntentViaIndependent(key, baseUrl, actualModel, messages, strategy.ClassifierTimeout, strategy.ClassifierDisableThinking)
 }
 
-func classifyIntentViaIndependent(apiKey, baseUrl, modelName string, messages []map[string]string, timeout int) (*IntentClassifyResult, error) {
-	if timeout <= 0 {
-		timeout = 10000
-	}
+func classifyIntentViaIndependent(apiKey, baseUrl, modelName string, messages []map[string]string, timeout int, disableThinking bool) (*IntentClassifyResult, error) {
+	timeout = normalizeIntentClassifierTimeout(timeout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Millisecond)
 	defer cancel()
@@ -215,8 +450,11 @@ func classifyIntentViaIndependent(apiKey, baseUrl, modelName string, messages []
 	requestBody := map[string]interface{}{
 		"model":       modelName,
 		"messages":    messages,
-		"max_tokens":  150,
+		"max_tokens":  500,
 		"temperature": 0,
+	}
+	if disableThinking {
+		requestBody["thinking"] = map[string]interface{}{"type": "disabled"}
 	}
 
 	jsonBytes, err := common.Marshal(requestBody)
@@ -273,10 +511,33 @@ func classifyIntentViaIndependent(apiKey, baseUrl, modelName string, messages []
 	content := respData.Choices[0].Message.Content
 	var result IntentClassifyResult
 	if err := common.Unmarshal([]byte(content), &result); err != nil {
-		return nil, fmt.Errorf("failed to parse intent result JSON: %w", err)
+		jsonContent := extractIntentJSON(content)
+		if jsonContent == "" || common.Unmarshal([]byte(jsonContent), &result) != nil {
+			return nil, fmt.Errorf("failed to parse intent result JSON: %w", err)
+		}
 	}
 
 	return &result, nil
+}
+
+func extractIntentJSON(content string) string {
+	content = strings.TrimSpace(content)
+	if strings.HasPrefix(content, "```") {
+		lines := strings.Split(content, "\n")
+		if len(lines) >= 3 {
+			content = strings.Join(lines[1:len(lines)-1], "\n")
+			content = strings.TrimSpace(content)
+			if strings.HasPrefix(strings.ToLower(content), "json") {
+				content = strings.TrimSpace(content[4:])
+			}
+		}
+	}
+	start := strings.Index(content, "{")
+	end := strings.LastIndex(content, "}")
+	if start >= 0 && end > start {
+		return content[start : end+1]
+	}
+	return ""
 }
 
 func computeIntentCacheKey(messages []map[string]string) string {

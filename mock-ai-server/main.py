@@ -122,18 +122,25 @@ async def chat_completions(
         print("-" * 40)
 
     # 解析请求
+    stream = False
     try:
         req_data = json.loads(body)
         model = req_data.get("model", "unknown")
         stream = req_data.get("stream", False)
         messages = req_data.get("messages", [])
+        reasoning_effort = req_data.get("reasoning_effort")
+        thinking = req_data.get("thinking")
         last_msg = messages[-1].get("content", "")[:50] if messages else ""
         print(f"\n[请求信息]")
         print(f"  模型: {model}")
         print(f"  流式: {stream}")
+        if reasoning_effort is not None:
+            print(f"  reasoning_effort: {reasoning_effort}")
+        if thinking is not None:
+            print(f"  thinking: {thinking}")
         print(f"  消息: {last_msg}...")
     except:
-        stream = False
+        pass
 
     # 转发请求
     headers = {
@@ -179,27 +186,39 @@ async def chat_completions(
             headers={"Cache-Control": "no-cache"}
         )
     else:
-        resp = await client.post(
-            f"{UPSTREAM_URL}/v1/chat/completions",
-            headers=headers,
-            content=body,
-            timeout=120.0
-        )
-        response_data = resp.json()
+        try:
+            resp = await client.post(
+                f"{UPSTREAM_URL}/v1/chat/completions",
+                headers=headers,
+                content=body,
+                timeout=120.0
+            )
+            response_data = resp.json()
+        except Exception as e:
+            print_separator("上游请求失败")
+            print(f"  错误: {e}")
+            return JSONResponse(
+                status_code=502,
+                content={"error": {"message": f"upstream request failed: {e}"}}
+            )
 
         print_separator("响应")
+
+        choice = response_data.get("choices", [{}])[0] if response_data.get("choices") else {}
+        msg = choice.get("message", {})
+        content = msg.get("content") or ""
+        reasoning = msg.get("reasoning_content") or ""
+        finish = choice.get("finish_reason", "?")
+        print(f"  finish_reason: {finish}")
+        print(f"  content ({len(content)} chars): {content}")
+        if reasoning:
+            print(f"  reasoning_content ({len(reasoning)} chars): {reasoning}")
 
         if is_encrypted and ENCRYPTION_KEY:
             try:
                 response_json = json.dumps(response_data)
-                print(f"[响应 (明文)]:")
-                print("-" * 40)
-                print(response_json[:300])
-                print("-" * 40)
                 encrypted = encrypt_data(response_json.encode('utf-8'), ENCRYPTION_KEY)
-                print(f"[响应 (已加密)]:")
-                print(f"  长度: {len(encrypted)} 字节")
-                print(f"  十六进制: {encrypted[:50].hex()}...")
+                print(f"\n[响应已加密]: {len(encrypted)} 字节")
                 return Response(
                     content=encrypted,
                     media_type="application/json",
@@ -209,10 +228,6 @@ async def chat_completions(
                 print(f"[加密失败]: {e}")
                 return response_data
         else:
-            print(f"[响应 (明文)]:")
-            print("-" * 40)
-            print(json.dumps(response_data, indent=2)[:300])
-            print("-" * 40)
             return response_data
 
 

@@ -18,10 +18,11 @@ type Strategy struct {
 	ClassifierModel     string `json:"classifier_model" gorm:"size:128"`
 	ClassifierApiKey    string `json:"classifier_api_key" gorm:"size:512"`
 	ClassifierBaseUrl   string `json:"classifier_base_url" gorm:"size:512"`
-	ClassifierPrompt    string `json:"classifier_prompt" gorm:"type:text"`
-	ClassifierTimeout   int    `json:"classifier_timeout" gorm:"default:10000"`
-	DifficultyModels    string `json:"difficulty_models" gorm:"type:text"`
-	IntentLabels        string `json:"intent_labels" gorm:"type:text"`
+	ClassifierPrompt         string `json:"classifier_prompt" gorm:"type:text"`
+	ClassifierTimeout        int    `json:"classifier_timeout" gorm:"default:10000"`
+	ClassifierDisableThinking bool  `json:"classifier_disable_thinking" gorm:"default:true"`
+	DifficultyModels         string `json:"difficulty_models" gorm:"type:text"`
+	IntentLabels             string `json:"intent_labels" gorm:"type:text"`
 
 	CronExpr    string `json:"cron_expr" gorm:"size:128"`
 	Timezone    string `json:"timezone" gorm:"size:64"`
@@ -110,10 +111,11 @@ func (s *Strategy) Update() error {
 		"classifier_model":     s.ClassifierModel,
 		"classifier_api_key":   s.ClassifierApiKey,
 		"classifier_base_url":  s.ClassifierBaseUrl,
-		"classifier_prompt":    s.ClassifierPrompt,
-		"classifier_timeout":   s.ClassifierTimeout,
-		"difficulty_models":    s.DifficultyModels,
-		"intent_labels":        s.IntentLabels,
+		"classifier_prompt":           s.ClassifierPrompt,
+		"classifier_timeout":          s.ClassifierTimeout,
+		"classifier_disable_thinking":  s.ClassifierDisableThinking,
+		"difficulty_models":           s.DifficultyModels,
+		"intent_labels":               s.IntentLabels,
 		"cron_expr":            s.CronExpr,
 		"timezone":             s.Timezone,
 		"time_actions":         s.TimeActions,

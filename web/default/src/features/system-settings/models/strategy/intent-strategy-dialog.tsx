@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -64,6 +65,7 @@ const intentStrategyFormSchema = z.object({
     .number()
     .min(1000, 'Must be >= 1000')
     .max(60000, 'Must be <= 60000'),
+  classifier_disable_thinking: z.boolean().optional(),
   description: z.string().optional(),
 })
 
@@ -101,6 +103,7 @@ export function IntentStrategyDialog({
       classifier_base_url: '',
       classifier_prompt: '',
       classifier_timeout: 3000,
+      classifier_disable_thinking: true,
       description: '',
     },
   })
@@ -129,6 +132,7 @@ export function IntentStrategyDialog({
           classifier_base_url: editData.classifier_base_url ?? '',
           classifier_prompt: editData.classifier_prompt ?? '',
           classifier_timeout: editData.classifier_timeout ?? 10000,
+          classifier_disable_thinking: editData.classifier_disable_thinking ?? true,
           description: editData.description ?? '',
         })
       } else {
@@ -142,6 +146,7 @@ export function IntentStrategyDialog({
           classifier_base_url: '',
           classifier_prompt: '',
           classifier_timeout: 10000,
+          classifier_disable_thinking: true,
           description: '',
         })
       }
@@ -168,6 +173,8 @@ export function IntentStrategyDialog({
           values.classifier_type === 'independent'
             ? values.classifier_base_url
             : undefined,
+        classifier_disable_thinking:
+          values.classifier_disable_thinking || undefined,
       }
 
       if (isEditMode && editData) {
@@ -445,6 +452,33 @@ export function IntentStrategyDialog({
               )}
             />
           </div>
+
+          <FormField
+            control={form.control}
+            name='classifier_disable_thinking'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Disable Thinking')}</FormLabel>
+                <FormControl>
+                  <div className='flex h-9 items-center gap-2'>
+                    <Switch
+                      checked={field.value ?? false}
+                      onCheckedChange={field.onChange}
+                    />
+                    <span className='text-sm text-muted-foreground'>
+                      {field.value ? t('On') : t('Off')}
+                    </span>
+                  </div>
+                </FormControl>
+                <FormDescription>
+                  {t(
+                    'Disable thinking/reasoning output. Forces direct JSON response.'
+                  )}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}

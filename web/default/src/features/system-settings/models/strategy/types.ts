@@ -13,6 +13,7 @@ export const strategySchema = z.object({
   classifier_base_url: z.string().optional(),
   classifier_prompt: z.string().optional(),
   classifier_timeout: z.number().default(3000),
+  classifier_disable_thinking: z.boolean().optional(),
   difficulty_models: z.string().optional(),
   cron_expr: z.string().optional(),
   timezone: z.string().optional(),
