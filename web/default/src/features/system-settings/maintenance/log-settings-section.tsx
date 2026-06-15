@@ -58,6 +58,7 @@ import { useUpdateOption } from '../hooks/use-update-option'
 const logSettingsSchema = z.object({
   LogConsumeEnabled: z.boolean(),
   RecordIpLogEnabled: z.boolean(),
+  IntentClassificationEnabled: z.boolean(),
 })
 
 type LogSettingsFormValues = z.infer<typeof logSettingsSchema>
@@ -65,6 +66,7 @@ type LogSettingsFormValues = z.infer<typeof logSettingsSchema>
 type LogSettingsSectionProps = {
   defaultEnabled: boolean
   defaultIpLogEnabled: boolean
+  defaultIntentEnabled: boolean
 }
 
 const HOURS_IN_DAY = 24
@@ -95,6 +97,7 @@ const quickSelectOptions = [
 export function LogSettingsSection({
   defaultEnabled,
   defaultIpLogEnabled,
+  defaultIntentEnabled,
 }: LogSettingsSectionProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
@@ -103,6 +106,7 @@ export function LogSettingsSection({
     defaultValues: {
       LogConsumeEnabled: defaultEnabled,
       RecordIpLogEnabled: defaultIpLogEnabled,
+      IntentClassificationEnabled: defaultIntentEnabled,
     },
   })
 
@@ -116,8 +120,9 @@ export function LogSettingsSection({
     form.reset({
       LogConsumeEnabled: defaultEnabled,
       RecordIpLogEnabled: defaultIpLogEnabled,
+      IntentClassificationEnabled: defaultIntentEnabled,
     })
-  }, [defaultEnabled, defaultIpLogEnabled, form])
+  }, [defaultEnabled, defaultIpLogEnabled, defaultIntentEnabled, form])
 
   const purgeTimestamp = useMemo(() => {
     if (!purgeDate) return null
@@ -144,6 +149,14 @@ export function LogSettingsSection({
         updateOption.mutateAsync({
           key: 'RecordIpLogEnabled',
           value: values.RecordIpLogEnabled,
+        })
+      )
+    }
+    if (values.IntentClassificationEnabled !== defaultIntentEnabled) {
+      promises.push(
+        updateOption.mutateAsync({
+          key: 'IntentClassificationEnabled',
+          value: values.IntentClassificationEnabled,
         })
       )
     }
@@ -230,6 +243,29 @@ export function LogSettingsSection({
                   <FormDescription>
                     {t(
                       'Log the client IP address for every API request. Useful for auditing and security monitoring.'
+                    )}
+                  </FormDescription>
+                </SettingsSwitchContent>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </SettingsSwitchItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='IntentClassificationEnabled'
+            render={({ field }) => (
+              <SettingsSwitchItem>
+                <SettingsSwitchContent>
+                  <FormLabel>{t('Intent Classification')}</FormLabel>
+                  <FormDescription>
+                    {t(
+                      'Automatically classify request intent as work or non-work using AI. Requires an intent strategy to be configured.'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>

@@ -101,6 +101,7 @@ const OPERATIONS_SECTIONS = [
       <LogSettingsSection
         defaultEnabled={Boolean(settings.LogConsumeEnabled)}
         defaultIpLogEnabled={Boolean(settings.RecordIpLogEnabled)}
+        defaultIntentEnabled={Boolean(settings.IntentClassificationEnabled)}
       />
     ),
   },
