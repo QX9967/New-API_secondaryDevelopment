@@ -332,18 +332,18 @@ export const TASK_PLATFORM_MAPPINGS: Record<string, StatusMapping> = {
  */
 export const INTENT_CATEGORY_FILTERS = [
   { label: 'All Intents', value: '' },
-  { label: 'Work', value: 'work' },
-  { label: 'Non-work', value: 'non_work' },
-  { label: 'Unknown', value: 'unknown' },
+  { label: 'Work', value: '工作' },
+  { label: 'Non-work', value: '非工作' },
+  { label: 'Unknown', value: '未知' },
 ] as const
 
 /**
  * Intent category color mapping for badges
  */
 export const INTENT_CATEGORY_COLORS: Record<string, string> = {
-  work: 'success',
-  non_work: 'danger',
-  unknown: 'neutral',
+  '工作': 'success',
+  '非工作': 'danger',
+  '未知': 'neutral',
 }
 
 // ============================================================================

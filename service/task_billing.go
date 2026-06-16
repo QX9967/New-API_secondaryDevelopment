@@ -65,16 +65,12 @@ func LogTaskConsumption(c *gin.Context, info *relaycommon.RelayInfo) {
 	})
 	if intentStrategy, ok := common.GetContextKeyType[*model.Strategy](c, constant.ContextKeyIntentStrategy); ok && intentStrategy != nil {
 		if common.IntentClassificationEnabled && common.LogDetailEnabled {
-			reqBody := common.GetContextKeyString(c, constant.ContextKeyLogRequestBody)
-			if reqBody != "" {
-				userMessages := ExtractUserMessagesFromLog(reqBody)
-				if len(userMessages) > 0 {
-					requestId := common.GetContextKeyString(c, common.RequestIdKey)
-					localStrategy := intentStrategy
-					gopool.Go(func() {
-						ClassifyIntentAsync(localStrategy, requestId, userMessages, info.UsingGroup)
-					})
-				}
+			if userMessages, ok := common.GetContextKeyType[[]map[string]string](c, constant.ContextKeyIntentUserMessages); ok && len(userMessages) > 0 {
+				requestId := common.GetContextKeyString(c, common.RequestIdKey)
+				localStrategy := intentStrategy
+				gopool.Go(func() {
+					ClassifyIntentAsync(localStrategy, requestId, userMessages, info.UsingGroup)
+				})
 			}
 		}
 	}

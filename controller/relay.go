@@ -153,6 +153,9 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	} else {
 		meta = fastTokenCountMetaForPricing(request)
 	}
+	if userMessages := service.ExtractUserMessagesFromRequest(request); len(userMessages) > 0 {
+		common.SetContextKey(c, constant.ContextKeyIntentUserMessages, userMessages)
+	}
 
 	if needSensitiveCheck && meta != nil {
 		contains, words := service.CheckSensitiveText(meta.CombineText)
