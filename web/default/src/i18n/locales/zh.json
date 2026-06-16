@@ -4397,7 +4397,7 @@
     "Used to authenticate with io.net deployment API": "用于 io.net 部署 API 鉴权",
     "Used to authenticate with the worker. Leave blank to keep the existing secret.": "用于与 Worker 进行身份验证。留空以保留现有密钥。",
     "Used:": "已使用：",
-    "User": "令牌创建者",
+    "User": "普通用户",
     "User {{id}}": "用户 {{id}}",
     "User Agreement": "用户协议",
     "User Analytics": "用户统计",
@@ -4425,7 +4425,7 @@
     "User updated successfully": "用户更新成功",
     "User Verification": "用户验证",
     "User-Agent include (one per line)": "User-Agent include（每行一个）",
-    "Username": "令牌创建者",
+    "Username": "登录名",
     "Username confirmation does not match": "用户名确认不匹配",
     "Username Field": "用户名字段",
     "Username or Email": "用户名或电子邮件",
@@ -4656,6 +4656,14 @@
     "High": "高",
     "Low": "低",
     "Off": "关闭",
-    "On": "开启"
+    "On": "开启",
+    "Show System Calls": "显示系统调用",
+    "System Call": "系统调用",
+    "Difficulty Classification": "难度分类",
+    "Intent Classification": "意图分类",
+    "Level": "等级",
+    "Category": "分类",
+    "Subcategory": "子分类",
+    "System consumption": "系统消耗"
   }
 }
