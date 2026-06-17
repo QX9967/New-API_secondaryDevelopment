@@ -68,8 +68,9 @@ func LogTaskConsumption(c *gin.Context, info *relaycommon.RelayInfo) {
 			if userMessages, ok := common.GetContextKeyType[[]map[string]string](c, constant.ContextKeyIntentUserMessages); ok && len(userMessages) > 0 {
 				requestId := common.GetContextKeyString(c, common.RequestIdKey)
 				localStrategy := intentStrategy
+				userId := info.UserId
 				gopool.Go(func() {
-					ClassifyIntentAsync(localStrategy, requestId, userMessages, info.UsingGroup)
+					ClassifyIntentAsync(localStrategy, requestId, userMessages, info.UsingGroup, userId)
 				})
 			}
 		}

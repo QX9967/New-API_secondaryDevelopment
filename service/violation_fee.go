@@ -168,8 +168,9 @@ func ChargeViolationFeeIfNeeded(ctx *gin.Context, relayInfo *relaycommon.RelayIn
 			if userMessages, ok := common.GetContextKeyType[[]map[string]string](ctx, constant.ContextKeyIntentUserMessages); ok && len(userMessages) > 0 {
 				requestId := common.GetContextKeyString(ctx, common.RequestIdKey)
 				localStrategy := intentStrategy
+				userId := relayInfo.UserId
 				gopool.Go(func() {
-					ClassifyIntentAsync(localStrategy, requestId, userMessages, relayInfo.UsingGroup)
+					ClassifyIntentAsync(localStrategy, requestId, userMessages, relayInfo.UsingGroup, userId)
 				})
 			}
 		}

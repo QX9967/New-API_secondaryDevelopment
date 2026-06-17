@@ -14,6 +14,7 @@ import (
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/model"
+	"github.com/QuantumNous/new-api/setting/ratio_setting"
 )
 
 var (
@@ -24,10 +25,14 @@ var (
 )
 
 type IntentClassifyResult struct {
-	Category    string  `json:"category"`
-	SubCategory string  `json:"subcategory"`
-	Confidence  float64 `json:"confidence"`
-	Reason      string  `json:"reason"`
+	Category         string  `json:"category"`
+	SubCategory      string  `json:"subcategory"`
+	Confidence       float64 `json:"confidence"`
+	Reason           string  `json:"reason"`
+	PromptTokens     int     `json:"prompt_tokens,omitempty"`
+	CompletionTokens int     `json:"completion_tokens,omitempty"`
+	ChannelId        int     `json:"channel_id,omitempty"`
+	ChannelName      string  `json:"channel_name,omitempty"`
 }
 
 const defaultIntentClassifierPrompt = `Classify the user's request intent.
@@ -36,7 +41,7 @@ Return only JSON, no thinking, no explanation, no markdown:
 User request:
 {{user_message}}`
 
-func ClassifyIntentAsync(strategy *model.Strategy, requestId string, userMessages []map[string]string, group string) {
+func ClassifyIntentAsync(strategy *model.Strategy, requestId string, userMessages []map[string]string, group string, userId int) {
 	if !common.IntentClassificationEnabled {
 		return
 	}
@@ -101,6 +106,38 @@ func ClassifyIntentAsync(strategy *model.Strategy, requestId string, userMessage
 
 	if err := model.UpdateLogIntent(requestId, result.Category, result.SubCategory, result.Confidence, result.Reason); err != nil {
 		common.SysLog("failed to update log intent: " + err.Error())
+	}
+
+	// 记录系统调用消耗日志
+	if userId > 0 {
+		go func() {
+			// 计算配额消耗
+			quota := 0
+			if result.PromptTokens > 0 || result.CompletionTokens > 0 {
+				modelRatio, _, _ := ratio_setting.GetModelRatio(strategy.ClassifierModel)
+				groupRatio := ratio_setting.GetGroupRatio("default")
+				quota = int(float64(result.PromptTokens+result.CompletionTokens) * modelRatio * groupRatio)
+			}
+
+			model.RecordSystemConsumeLog(model.RecordSystemConsumeLogParams{
+				SystemCallType:   "intent",
+				UserId:           userId,
+				RelatedRequestId: requestId,
+				ModelName:        strategy.ClassifierModel,
+				PromptTokens:     result.PromptTokens,
+				CompletionTokens: result.CompletionTokens,
+				Quota:            quota,
+				ChannelId:        result.ChannelId,
+				ChannelName:      result.ChannelName,
+				Content:          fmt.Sprintf("Intent classification: %s/%s", result.Category, result.SubCategory),
+				Other: map[string]interface{}{
+					"category":    result.Category,
+					"subcategory": result.SubCategory,
+					"confidence":  result.Confidence,
+					"reason":      result.Reason,
+				},
+			})
+		}()
 	}
 }
 
@@ -438,7 +475,16 @@ func classifyIntentViaChannel(strategy *model.Strategy, messages []map[string]st
 		}
 	}
 
-	return classifyIntentViaIndependent(key, baseUrl, actualModel, messages, strategy.ClassifierTimeout, strategy.ClassifierDisableThinking)
+	result, err := classifyIntentViaIndependent(key, baseUrl, actualModel, messages, strategy.ClassifierTimeout, strategy.ClassifierDisableThinking)
+	if err != nil {
+		return nil, err
+	}
+
+	// 填充渠道信息
+	result.ChannelId = channel.Id
+	result.ChannelName = channel.Name
+
+	return result, nil
 }
 
 func classifyIntentViaIndependent(apiKey, baseUrl, modelName string, messages []map[string]string, timeout int, disableThinking bool) (*IntentClassifyResult, error) {
@@ -490,6 +536,10 @@ func classifyIntentViaIndependent(apiKey, baseUrl, modelName string, messages []
 		return nil, fmt.Errorf("failed to read intent response: %w", err)
 	}
 
+	type Usage struct {
+		PromptTokens     int `json:"prompt_tokens"`
+		CompletionTokens int `json:"completion_tokens"`
+	}
 	type Choice struct {
 		Message struct {
 			Content string `json:"content"`
@@ -497,6 +547,7 @@ func classifyIntentViaIndependent(apiKey, baseUrl, modelName string, messages []
 	}
 	type Response struct {
 		Choices []Choice `json:"choices"`
+		Usage   Usage    `json:"usage"`
 	}
 
 	var respData Response
@@ -516,6 +567,10 @@ func classifyIntentViaIndependent(apiKey, baseUrl, modelName string, messages []
 			return nil, fmt.Errorf("failed to parse intent result JSON: %w", err)
 		}
 	}
+
+	// 填充 token 使用信息
+	result.PromptTokens = respData.Usage.PromptTokens
+	result.CompletionTokens = respData.Usage.CompletionTokens
 
 	return &result, nil
 }

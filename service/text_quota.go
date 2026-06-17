@@ -487,8 +487,9 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 				if len(userMessages) > 0 {
 					requestId := common.GetContextKeyString(ctx, common.RequestIdKey)
 					localStrategy := intentStrategy
+					userId := relayInfo.UserId
 					gopool.Go(func() {
-						ClassifyIntentAsync(localStrategy, requestId, userMessages, relayInfo.UsingGroup)
+						ClassifyIntentAsync(localStrategy, requestId, userMessages, relayInfo.UsingGroup, userId)
 					})
 				}
 			}

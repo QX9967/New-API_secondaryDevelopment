@@ -131,6 +131,8 @@ func TestClassifier(c *gin.Context) {
 		req.ClassifierTimeout,
 		"default",
 		messages,
+		0,  // 测试调用，不需要 userId
+		"", // 测试调用，不需要 requestId
 	)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{

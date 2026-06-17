@@ -78,4 +78,10 @@ const (
 	ContextKeyStrategyDifficultyLevel ContextKey = "strategy_difficulty_level"
 	ContextKeyStrategyTimeMasked      ContextKey = "strategy_time_masked"
 	ContextKeyIntentStrategy          ContextKey = "intent_strategy"
+
+	// ContextKeyAuditLogged marks that the current request has already recorded
+	// a manage/operation audit log inside the handler. When set, the admin-audit
+	// fallback in authHelper (finishAdminAudit) skips its record to avoid
+	// duplicate entries.
+	ContextKeyAuditLogged ContextKey = "audit_logged"
 )

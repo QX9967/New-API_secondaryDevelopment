@@ -99,6 +99,9 @@ func evaluateDifficultyStrategy(c *gin.Context, strategy *model.Strategy, group 
 		return cached, models, nil
 	}
 
+	userId := c.GetInt("id")
+	requestId := c.GetString(common.RequestIdKey)
+
 	result, err := service.ClassifyDifficulty(
 		strategy.Id,
 		strategy.ClassifierType,
@@ -110,6 +113,8 @@ func evaluateDifficultyStrategy(c *gin.Context, strategy *model.Strategy, group 
 		strategy.ClassifierTimeout,
 		group,
 		messages,
+		userId,
+		requestId,
 	)
 	if err != nil {
 		return "", nil, err

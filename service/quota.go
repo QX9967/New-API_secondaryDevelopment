@@ -262,8 +262,9 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 				requestId := common.GetContextKeyString(ctx, common.RequestIdKey)
 				localStrategy := intentStrategy
 				group := common.GetContextKeyString(ctx, constant.ContextKeyUsingGroup)
+				userId := relayInfo.UserId
 				gopool.Go(func() {
-					ClassifyIntentAsync(localStrategy, requestId, userMessages, group)
+					ClassifyIntentAsync(localStrategy, requestId, userMessages, group, userId)
 				})
 			}
 		}
@@ -396,8 +397,9 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 			if userMessages, ok := common.GetContextKeyType[[]map[string]string](ctx, constant.ContextKeyIntentUserMessages); ok && len(userMessages) > 0 {
 				requestId := common.GetContextKeyString(ctx, common.RequestIdKey)
 				localStrategy := intentStrategy
+				userId := relayInfo.UserId
 				gopool.Go(func() {
-					ClassifyIntentAsync(localStrategy, requestId, userMessages, relayInfo.UsingGroup)
+					ClassifyIntentAsync(localStrategy, requestId, userMessages, relayInfo.UsingGroup, userId)
 				})
 			}
 		}

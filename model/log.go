@@ -65,13 +65,15 @@ type Log struct {
 
 // don't use iota, avoid change log type value
 const (
-	LogTypeUnknown = 0
-	LogTypeTopup   = 1
-	LogTypeConsume = 2
-	LogTypeManage  = 3
-	LogTypeSystem  = 4
-	LogTypeError   = 5
-	LogTypeRefund  = 6
+	LogTypeUnknown        = 0
+	LogTypeTopup          = 1
+	LogTypeConsume        = 2
+	LogTypeManage         = 3
+	LogTypeSystem         = 4
+	LogTypeError          = 5
+	LogTypeRefund         = 6
+	LogTypeLogin          = 7
+	LogTypeSystemConsume  = 8 // 系统调用消耗（难度分类、意图分类等）
 )
 
 func formatUserLogs(logs []*Log, startIdx int) {
@@ -84,6 +86,8 @@ func formatUserLogs(logs []*Log, startIdx int) {
 		if otherMap != nil {
 			// Remove admin-only debug fields.
 			delete(otherMap, "admin_info")
+			// Remove operation-audit details (operator/route info), admin-only.
+			delete(otherMap, "audit_info")
 			// delete(otherMap, "reject_reason")
 			delete(otherMap, "stream_status")
 		}
@@ -137,6 +141,74 @@ func RecordLogWithAdminInfo(userId int, logType int, content string, adminInfo m
 	}
 	if err := LOG_DB.Create(log).Error; err != nil {
 		common.SysLog("failed to record log: " + err.Error())
+	}
+}
+
+// buildOpField 构建语言无关的操作描述（写入 Other.op）。
+// 前端依据 action(稳定操作标识) + params(结构化参数) 在渲染期用 i18n 本地化展示，
+// 因此不在数据库中存储自然语言句子。
+func buildOpField(action string, params map[string]interface{}) map[string]interface{} {
+	op := map[string]interface{}{
+		"action": action,
+	}
+	if len(params) > 0 {
+		op["params"] = params
+	}
+	return op
+}
+
+// RecordLoginLog 记录用户登录成功的审计日志（type=LogTypeLogin）。
+// username 由调用方传入（登录流程已持有用户对象），避免额外的数据库查询。
+// content 为英文兜底文本（用于导出/经典前端）；action+params 供前端本地化渲染。
+// extra 可携带 login_method、user_agent 等附加信息（普通用户可见）。
+func RecordLoginLog(userId int, username string, content string, ip string, action string, params map[string]interface{}, extra map[string]interface{}) {
+	other := map[string]interface{}{}
+	for k, v := range extra {
+		other[k] = v
+	}
+	other["op"] = buildOpField(action, params)
+	log := &Log{
+		UserId:    userId,
+		Username:  username,
+		CreatedAt: common.GetTimestamp(),
+		Type:      LogTypeLogin,
+		Content:   content,
+		Ip:        ip,
+		Other:     common.MapToJsonStr(other),
+	}
+	if err := LOG_DB.Create(log).Error; err != nil {
+		common.SysLog("failed to record login log: " + err.Error())
+	}
+}
+
+// RecordOperationAuditLog 记录管理/高危操作审计日志（type=LogTypeManage）。
+// logUserId 为日志归属者（面向用户的操作如额度调整归属目标用户，资源类操作如渠道/系统设置归属操作者），
+// username 内部按 logUserId 查询。content 为英文兜底文本（导出/经典前端用）。
+// action+params 写入 Other.op，供前端本地化渲染（普通用户可见，不含敏感信息）。
+// adminInfo 存放操作者身份（写入 Other.admin_info，普通用户查询时剥离）；
+// auditInfo 存放路由/方法/结果等中间件兜底信息（写入 Other.audit_info，普通用户查询时剥离）。
+func RecordOperationAuditLog(logUserId int, content string, ip string, action string, params map[string]interface{}, adminInfo map[string]interface{}, auditInfo map[string]interface{}) {
+	username, _ := GetUsernameById(logUserId, false)
+	other := map[string]interface{}{
+		"op": buildOpField(action, params),
+	}
+	if len(adminInfo) > 0 {
+		other["admin_info"] = adminInfo
+	}
+	if len(auditInfo) > 0 {
+		other["audit_info"] = auditInfo
+	}
+	log := &Log{
+		UserId:    logUserId,
+		Username:  username,
+		CreatedAt: common.GetTimestamp(),
+		Type:      LogTypeManage,
+		Content:   content,
+		Ip:        ip,
+		Other:     common.MapToJsonStr(other),
+	}
+	if err := LOG_DB.Create(log).Error; err != nil {
+		common.SysLog("failed to record operation audit log: " + err.Error())
 	}
 }
 
@@ -333,10 +405,63 @@ func RecordTaskBillingLog(params RecordTaskBillingLogParams) {
 	}
 }
 
-func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int, group string, requestId string, upstreamRequestId string, tokenKey string, intentCategory string, intentSubCategory string) (logs []*Log, total int64, err error) {
+type RecordSystemConsumeLogParams struct {
+	SystemCallType   string  `json:"system_call_type"`   // "difficulty" / "intent" / "time"
+	UserId           int     `json:"user_id"`            // 关联的用户 ID
+	RelatedRequestId string  `json:"related_request_id"` // 关联的用户请求 ID
+	ModelName        string  `json:"model_name"`         // 使用的模型
+	PromptTokens     int     `json:"prompt_tokens"`      // 输入 token
+	CompletionTokens int     `json:"completion_tokens"`  // 输出 token
+	Quota            int     `json:"quota"`              // 配额消耗
+	ChannelId        int     `json:"channel_id"`         // 渠道 ID
+	ChannelName      string  `json:"channel_name"`       // 渠道名称
+	Content          string  `json:"content"`            // 调用内容摘要
+	Other            map[string]interface{} `json:"other"` // 扩展数据
+}
+
+func RecordSystemConsumeLog(params RecordSystemConsumeLogParams) {
+	if !common.LogConsumeEnabled {
+		return
+	}
+	log := &Log{
+		UserId:    params.UserId,
+		CreatedAt: common.GetTimestamp(),
+		Type:      LogTypeSystemConsume,
+		Content:   params.Content,
+		TokenName: fmt.Sprintf("system-%s", params.SystemCallType),
+		ModelName: params.ModelName,
+		Quota:     params.Quota,
+		PromptTokens:     params.PromptTokens,
+		CompletionTokens: params.CompletionTokens,
+		ChannelId:        params.ChannelId,
+		RequestId:        params.RelatedRequestId,
+	}
+	if params.Other != nil {
+		params.Other["system_call_type"] = params.SystemCallType
+		if params.ChannelName != "" {
+			params.Other["channel_name"] = params.ChannelName
+		}
+		log.Other = common.MapToJsonStr(params.Other)
+	} else {
+		log.Other = common.MapToJsonStr(map[string]interface{}{
+			"system_call_type": params.SystemCallType,
+			"channel_name":     params.ChannelName,
+		})
+	}
+	err := LOG_DB.Create(log).Error
+	if err != nil {
+		common.SysLog("failed to record system consume log: " + err.Error())
+	}
+}
+
+func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int, group string, requestId string, upstreamRequestId string, tokenKey string, intentCategory string, intentSubCategory string, includeSystemConsume bool) (logs []*Log, total int64, err error) {
 	var tx *gorm.DB
 	if logType == LogTypeUnknown {
 		tx = LOG_DB
+		// 默认排除系统调用日志，除非明确包含
+		if !includeSystemConsume {
+			tx = tx.Where("logs.type != ?", LogTypeSystemConsume)
+		}
 	} else {
 		tx = LOG_DB.Where("logs.type = ?", logType)
 	}
@@ -463,10 +588,14 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 
 const logSearchCountLimit = 10000
 
-func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int, group string, requestId string, upstreamRequestId string, tokenKey string, intentCategory string, intentSubCategory string) (logs []*Log, total int64, err error) {
+func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int, group string, requestId string, upstreamRequestId string, tokenKey string, intentCategory string, intentSubCategory string, includeSystemConsume bool) (logs []*Log, total int64, err error) {
 	var tx *gorm.DB
 	if logType == LogTypeUnknown {
 		tx = LOG_DB.Where("logs.user_id = ?", userId)
+		// 默认排除系统调用日志，除非明确包含
+		if !includeSystemConsume {
+			tx = tx.Where("logs.type != ?", LogTypeSystemConsume)
+		}
 	} else {
 		tx = LOG_DB.Where("logs.user_id = ? and logs.type = ?", userId, logType)
 	}

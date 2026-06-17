@@ -10,6 +10,7 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
+	"github.com/QuantumNous/new-api/setting/ratio_setting"
 )
 
 const defaultClassifierPrompt = `You are a request complexity classifier. Based on the user's request content, determine its complexity level.
@@ -22,11 +23,15 @@ Classification criteria:
 Return only JSON: {"level": "simple|medium|hard", "reason": "brief reason"}`
 
 type ClassifierResult struct {
-	Level  string `json:"level"`
-	Reason string `json:"reason"`
+	Level            string `json:"level"`
+	Reason           string `json:"reason"`
+	PromptTokens     int    `json:"prompt_tokens,omitempty"`
+	CompletionTokens int    `json:"completion_tokens,omitempty"`
+	ChannelId        int    `json:"channel_id,omitempty"`
+	ChannelName      string `json:"channel_name,omitempty"`
 }
 
-func ClassifyDifficulty(strategyId int, classifierType string, channelId int, modelName, apiKey, baseUrl, customPrompt string, timeout int, group string, userMessages []map[string]string) (*ClassifierResult, error) {
+func ClassifyDifficulty(strategyId int, classifierType string, channelId int, modelName, apiKey, baseUrl, customPrompt string, timeout int, group string, userMessages []map[string]string, userId int, requestId string) (*ClassifierResult, error) {
 	start := time.Now()
 
 	prompt := defaultClassifierPrompt
@@ -74,6 +79,37 @@ func ClassifyDifficulty(strategyId int, classifierType string, channelId int, mo
 
 	if result.Level != "simple" && result.Level != "medium" && result.Level != "hard" {
 		return nil, fmt.Errorf("invalid classification level: %s", result.Level)
+	}
+
+	// 记录系统调用消耗日志
+	if result != nil && userId > 0 {
+		go func() {
+			// 计算配额消耗
+			quota := 0
+			if result.PromptTokens > 0 || result.CompletionTokens > 0 {
+				modelRatio, _, _ := ratio_setting.GetModelRatio(modelName)
+				groupRatio := ratio_setting.GetGroupRatio("default")
+				quota = int(float64(result.PromptTokens+result.CompletionTokens) * modelRatio * groupRatio)
+			}
+
+			model.RecordSystemConsumeLog(model.RecordSystemConsumeLogParams{
+				SystemCallType:   "difficulty",
+				UserId:           userId,
+				RelatedRequestId: requestId,
+				ModelName:        modelName,
+				PromptTokens:     result.PromptTokens,
+				CompletionTokens: result.CompletionTokens,
+				Quota:            quota,
+				ChannelId:        result.ChannelId,
+				ChannelName:      result.ChannelName,
+				Content:          fmt.Sprintf("Difficulty classification: %s", result.Level),
+				Other: map[string]interface{}{
+					"level":      result.Level,
+					"reason":     result.Reason,
+					"latency_ms": latencyMs,
+				},
+			})
+		}()
 	}
 
 	return result, nil
@@ -134,7 +170,16 @@ func classifyViaChannel(channelId int, modelName string, messages []map[string]s
 		}
 	}
 
-	return classifyViaIndependent(key, baseUrl, actualModel, messages, timeout)
+	result, err := classifyViaIndependent(key, baseUrl, actualModel, messages, timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	// 填充渠道信息
+	result.ChannelId = channel.Id
+	result.ChannelName = channel.Name
+
+	return result, nil
 }
 
 func classifyViaIndependent(apiKey, baseUrl, modelName string, messages []map[string]string, timeout int) (*ClassifierResult, error) {
@@ -181,6 +226,10 @@ func classifyViaIndependent(apiKey, baseUrl, modelName string, messages []map[st
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
+	type Usage struct {
+		PromptTokens     int `json:"prompt_tokens"`
+		CompletionTokens int `json:"completion_tokens"`
+	}
 	type Choice struct {
 		Message struct {
 			Content string `json:"content"`
@@ -188,6 +237,7 @@ func classifyViaIndependent(apiKey, baseUrl, modelName string, messages []map[st
 	}
 	type Response struct {
 		Choices []Choice `json:"choices"`
+		Usage   Usage    `json:"usage"`
 	}
 
 	var respData Response
@@ -212,6 +262,10 @@ func classifyViaIndependent(apiKey, baseUrl, modelName string, messages []map[st
 			result.Level = "medium"
 		}
 	}
+
+	// 填充 token 使用信息
+	result.PromptTokens = respData.Usage.PromptTokens
+	result.CompletionTokens = respData.Usage.CompletionTokens
 
 	return &result, nil
 }
