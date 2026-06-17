@@ -4,48 +4,51 @@
 
 # LTAPI
 
-**基于 [New API](https://github.com/QuantumNous/new-api) 二开的 AI API 网关**
+**Enterprise-grade AI API Gateway based on [New API](https://github.com/QuantumNous/new-api)**
+
+[English](./README.md) | [中文](./README-zh.md)
 
 </div>
 
-## 项目简介
+## Overview
 
-LTAPI 是基于 [New API](https://github.com/QuantumNous/new-api) 进行二次开发的 AI API 网关项目。在保留 New API 全部核心功能的基础上，新增了以下功能特性。
+LTAPI is an enterprise-focused AI API gateway built upon [New API](https://github.com/QuantumNous/new-api). It performs secondary development on the New API project, adding features suitable for enterprise use cases while retaining all core functionality.
 
-## 二开新增功能
+## Enterprise Features
 
-| 功能 | 说明 |
-|------|------|
-| Key 额度查询 | 开发 Key 的额度查询功能，方便用户实时查看令牌剩余额度 |
-| 问答记录 | 记录每一次用户询问的问题和模型的回复，完整保留对话上下文 |
-| 日志增强 | 使用日志中添加显示令牌、令牌使用者的信息，提升日志可追溯性 |
-| 多维度查询 | 添加令牌、令牌使用者、令牌创建者的查询，支持按多维度筛选和检索日志 |
-| 端到端加密 | 支持 AES-256-GCM 加密传输，请求体和响应体均可加密，防止中间人窃听 |
-| 裸路径兼容 | 支持 `/chat/completions` 裸路径请求，自动规范化为 `/v1/chat/completions`，兼容 OpenCode 等客户端 |
-| 定时任务日志静默 | 轮询任务（task/midjourney/options sync）的 GORM SQL 日志和 SysLog 已静默，减少日志噪音 |
-| Mock 测试服务器 | 提供 `mock-ai-server` 模拟上游 AI 供应商，支持加密转发和流式响应，便于本地调试 |
-| 路由策略系统 | 支持基于 LLM 难度分类和 Cron 时间调度的动态路由策略，可配置分类器、难度-模型映射、定时模型开关等 |
-| 意图分类系统 | 支持对用户请求进行意图分类（工作/非工作），可配置独立分类器、自定义提示词，支持禁用思考模式以提升分类稳定性 |
+| Feature | Description |
+|---------|-------------|
+| Key Quota Query | Real-time token balance checking for API keys |
+| Conversation Logging | Complete recording of user queries and model responses with full context |
+| Enhanced Logging | Token and user information display in usage logs for better traceability |
+| Multi-dimensional Query | Filter and search logs by token, token user, token creator, and more |
+| End-to-End Encryption | AES-256-GCM encryption for request/response bodies, preventing man-in-the-middle attacks |
+| Bare Path Compatibility | Support `/chat/completions` bare path requests, auto-normalized to `/v1/chat/completions` |
+| Scheduled Task Log Silence | Reduced log noise from polling tasks (task/midjourney/options sync) |
+| Mock Test Server | `mock-ai-server` for simulating upstream AI providers with encryption support |
+| Route Strategy System | Dynamic routing based on LLM difficulty classification and Cron scheduling |
+| Intent Classification | User request intent classification (work/non-work) with configurable classifiers |
+| System Call Logging | Track token consumption for system-level AI calls (difficulty/intent classification) |
 
-## 部署
+## Deployment
 
-### Docker Compose（推荐）
+### Docker Compose (Recommended)
 
 ```bash
 git clone https://github.com/QX9967/LTAPI.git
 cd LTAPI
 
-# 编辑 docker-compose.yml 配置
+# Edit docker-compose.yml configuration
 nano docker-compose.yml
 
-# 启动服务
+# Start services
 docker-compose up -d
 ```
 
-### Docker 命令
+### Docker Command
 
 ```bash
-# 使用 SQLite（默认）
+# Using SQLite (default)
 docker run --name ltapi -d --restart always \
   -p 3000:3000 \
   -e TZ=Asia/Shanghai \
@@ -53,18 +56,18 @@ docker run --name ltapi -d --restart always \
   calciumion/new-api:latest
 ```
 
-部署完成后访问 `http://localhost:3000` 即可使用。
+After deployment, visit `http://localhost:3000` to start using.
 
-## 技术栈
+## Tech Stack
 
-- **后端**: Go, Gin, GORM
-- **前端**: React 19, TypeScript, Rsbuild, Tailwind CSS
-- **数据库**: SQLite / MySQL / PostgreSQL
+- **Backend**: Go, Gin, GORM
+- **Frontend**: React 19, TypeScript, Rsbuild, Tailwind CSS
+- **Database**: SQLite / MySQL / PostgreSQL
 
-## 致谢
+## Acknowledgements
 
-本项目基于 [New API](https://github.com/QuantumNous/new-api) 二次开发，感谢原项目团队的杰出工作。
+This project is based on [New API](https://github.com/QuantumNous/new-api). Special thanks to the original project team for their excellent work.
 
-## 许可证
+## License
 
-本项目继承原项目的 [AGPLv3 许可证](./LICENSE)。
+This project inherits the [AGPLv3 License](./LICENSE) from the original project.
